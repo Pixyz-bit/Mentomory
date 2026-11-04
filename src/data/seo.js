@@ -1,29 +1,30 @@
 export const SITE_URL = 'https://mentomory.pixyzbit.dev';
+const SITE_TITLE = 'Mentomory | Online Photo Booth & Flipbook Studio';
 
 const pages = {
   home: {
     path: '/',
-    title: 'Mentomory | Online Photo Booth & Flipbook Studio',
+    title: SITE_TITLE,
     description:
       'Create photo strips with Mentomory’s online photo booth. Choose 21 layouts, add frames and face effects, then download JPG photos or seven-second MP4 live strips.',
     index: true,
   },
   templates: {
     path: '/templates',
-    title: 'Photo Strip Templates & Layouts | Mentomory',
+    title: SITE_TITLE,
     description:
       'Explore 21 photo booth layouts: classic strips, Polaroids, single prints and photo grids. Pick your layout, capture your photos and customize your keepsake.',
     index: true,
   },
   booth: {
     path: '/booth',
-    title: 'Capture Your Photos | Mentomory',
+    title: SITE_TITLE,
     description: 'Capture photos or seven-second live clips in your browser with Mentomory.',
     index: false,
   },
   editor: {
     path: '/edit',
-    title: 'Customize Your Photo Strip | Mentomory',
+    title: SITE_TITLE,
     description:
       'Customize your Mentomory photo strip with frames, backgrounds, filters and captions.',
     index: false,

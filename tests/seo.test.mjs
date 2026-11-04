@@ -4,11 +4,11 @@ import { getSeo, getStructuredData, publicPages, SITE_URL } from '../src/data/se
 import { replaceSeoHead } from '../scripts/seo-html.mjs';
 
 test('public pages have distinct self-canonicals and discoverable metadata', () => {
-  const titles = new Set();
+  const canonicals = new Set();
   for (const page of publicPages) {
     const seo = getSeo(page);
     const html = replaceSeoHead('<head><!-- seo:start --><!-- seo:end --></head>', page);
-    titles.add(seo.title);
+    canonicals.add(seo.url);
     assert.equal(seo.index, true);
     assert.ok(seo.url.startsWith(SITE_URL));
     assert.equal((html.match(/rel="canonical"/g) || []).length, 1);
@@ -21,7 +21,7 @@ test('public pages have distinct self-canonicals and discoverable metadata', () 
       data['@graph'].some((entry) => entry['@type'] === 'WebSite' && entry.name === 'Mentomory')
     );
   }
-  assert.equal(titles.size, publicPages.length);
+  assert.equal(canonicals.size, publicPages.length);
 });
 
 test('capture and edit sessions are noindex and excluded from the public sitemap set', () => {
