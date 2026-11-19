@@ -3,6 +3,10 @@ import { prepareFrameOptions } from '../frames/frame-assets.js';
 export const LIVE_SECONDS = 7;
 // Hold each pose long enough for a stepped, scrapbook-style animation.
 export const LIVE_FPS = 4;
+export const motionStyles = {
+  boomerang: { seconds: 1, fps: 12, boomerang: true },
+  live: { seconds: 2, fps: 12 },
+};
 export async function supportsMp4() {
   try {
     const { canEncodeVideo } = await import('./mp4-codec.js');
@@ -39,7 +43,18 @@ function wait(ms, signal) {
 }
 
 // AVC encoding plus an actual MP4 container; never relabel a WebM as MP4.
-export async function encodeCanvas(canvas, draw, { signal, onProgress, realtime = false } = {}) {
+export async function encodeCanvas(
+  canvas,
+  draw,
+  {
+    signal,
+    onProgress,
+    realtime = false,
+    seconds = LIVE_SECONDS,
+    fps = LIVE_FPS,
+    boomerang = false,
+  } = {}
+) {
   check(signal);
   const { Output, Mp4OutputFormat, BufferTarget, CanvasSource, canEncodeVideo } = await import(
     './mp4-codec.js'
@@ -64,21 +79,31 @@ export async function encodeCanvas(canvas, draw, { signal, onProgress, realtime 
     bitrate: 3_000_000,
   });
   output.addVideoTrack(source, {
-    frameRate: LIVE_FPS,
+    frameRate: fps,
   });
+  const frameCount = Math.round(seconds * fps);
+  const snapshots = [];
+  const ctx = boomerang ? canvas.getContext('2d') : null;
+  const addFrame = (frame) => source.add(frame / fps, 1 / fps, { keyFrame: frame % fps === 0 });
   try {
     await output.start();
     const started = performance.now();
-    for (let frame = 0; frame < LIVE_SECONDS * LIVE_FPS; frame++) {
+    for (let frame = 0; frame < frameCount; frame++) {
       check(signal);
-      if (realtime) await wait(started + (frame * 1000) / LIVE_FPS - performance.now(), signal);
-      await draw(frame / LIVE_FPS);
-      await source.add(frame / LIVE_FPS, 1 / LIVE_FPS, {
-        keyFrame: frame % LIVE_FPS === 0,
-      });
-      onProgress?.((frame + 1) / (LIVE_SECONDS * LIVE_FPS));
+      if (realtime) await wait(started + (frame * 1000) / fps - performance.now(), signal);
+      await draw(frame / fps);
+      if (boomerang && frame > 0 && frame < frameCount - 1) {
+        snapshots.push(await createImageBitmap(canvas));
+      }
+      await addFrame(frame);
+      onProgress?.((frame + 1) / frameCount);
     }
-    if (realtime) await wait(started + LIVE_SECONDS * 1000 - performance.now(), signal);
+    if (realtime) await wait(started + seconds * 1000 - performance.now(), signal);
+    for (let i = snapshots.length - 1; i >= 0; i--) {
+      check(signal);
+      ctx.drawImage(snapshots[i], 0, 0);
+      await addFrame(frameCount + snapshots.length - 1 - i);
+    }
     check(signal);
     source.close();
     await output.finalize();
@@ -89,6 +114,8 @@ export async function encodeCanvas(canvas, draw, { signal, onProgress, realtime 
   } catch (error) {
     await output.cancel().catch(() => {});
     throw error;
+  } finally {
+    snapshots.forEach((frame) => frame.close());
   }
 }
 export async function composeLive(shots, template, options, { signal, onProgress } = {}) {
@@ -142,6 +169,8 @@ export async function composeLive(shots, template, options, { signal, onProgress
       {
         signal,
         onProgress,
+        seconds: shots[0]?.seconds,
+        fps: shots[0]?.fps,
       }
     );
     return {

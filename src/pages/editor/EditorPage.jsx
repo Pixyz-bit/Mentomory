@@ -42,7 +42,7 @@ export default function EditorPage({
             </button>
           </div>
         </div>
-        <EditorControls {...editor} onStartOver={onStartOver} />
+        <EditorControls {...editor} duration={shots[0]?.seconds} onStartOver={onStartOver} />
       </div>
     </main>
   );

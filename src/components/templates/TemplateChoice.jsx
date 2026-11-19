@@ -1,6 +1,6 @@
 import { layoutSize } from '../../lib/collage.js';
 import TemplateMini from '../common/TemplateMini.jsx';
-export default function TemplateChoice({ item, selected, locked, onSelect }) {
+export default function TemplateChoice({ item, selected, locked, onSelect, diagram }) {
   const { width, height } = layoutSize(item);
   return (
     <button
@@ -10,13 +10,10 @@ export default function TemplateChoice({ item, selected, locked, onSelect }) {
       onClick={() => onSelect(item.id)}
     >
       <span className="choice-preview" style={{ '--layout-aspect': width / height }}>
-        <TemplateMini template={item} />
+        <TemplateMini template={item} diagram={diagram} />
       </span>
       <span className="choice-copy">
         <strong>{item.name}</strong>
-        <span>
-          {item.count} {item.count === 1 ? 'photo' : 'photos'}
-        </span>
       </span>
     </button>
   );

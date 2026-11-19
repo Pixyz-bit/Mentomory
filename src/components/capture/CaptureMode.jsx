@@ -1,6 +1,13 @@
-export default function CaptureMode({ mode, templateLocked, mp4Supported, setMode }) {
+export default function CaptureMode({
+  mode,
+  templateLocked,
+  mp4Supported,
+  setMode,
+  motionStyle,
+  recordingSeconds = 7,
+}) {
   return (
-    <div className="capture-mode" role="group" aria-label="Capture mode">
+    <div className="capture-mode flex shrink-0 overflow-hidden [&>button]:border-0 [&>button]:font-bold" role="group" aria-label="Capture mode">
       <button
         className={mode === 'photo' ? 'active' : ''}
         aria-pressed={mode === 'photo'}
@@ -20,7 +27,7 @@ export default function CaptureMode({ mode, templateLocked, mp4Supported, setMod
             : undefined
         }
       >
-        Live · 7 sec
+        {motionStyle === 'boomerang' ? 'Boomerang' : 'Live'} · {recordingSeconds} sec
       </button>
     </div>
   );

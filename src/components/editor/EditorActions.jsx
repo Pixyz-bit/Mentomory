@@ -12,13 +12,14 @@ export default function EditorActions({
   onStartOver,
   downloadStatus,
   onDownload,
+  duration = 7,
 }) {
   return (
     <div className="editor-actions">
       {live &&
         (exporting ? (
           <>
-            <progress value={progress} max="1" aria-label="MP4 export progress" />
+            <progress className="media-progress" value={progress} max="1" aria-label="MP4 export progress" />
             <button className="button button-outline" onClick={() => abort.current?.abort()}>
               Cancel export
             </button>
@@ -55,8 +56,14 @@ export default function EditorActions({
       {live && (
         <p className="download-meta">
           {mp4
-            ? 'MP4 · ' + mp4.width + ' × ' + mp4.height + ' px · 7 sec'
-            : 'MP4 · 7 sec · up to 1920px on the longest side'}
+            ? 'MP4 · ' +
+              mp4.width +
+              ' × ' +
+              mp4.height +
+              ' px · ' +
+              Number(duration.toFixed(2)) +
+              ' sec'
+            : 'MP4 · ' + Number(duration.toFixed(2)) + ' sec · up to 1920px on the longest side'}
         </p>
       )}
       {downloadStatus && (

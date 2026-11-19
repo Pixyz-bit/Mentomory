@@ -15,6 +15,7 @@ import usePageSeo from './hooks/usePageSeo.js';
 export default function App() {
   const session = useBoothSession();
   const [resetPending, setResetPending] = useState(false);
+  const [posePrompts, setPosePrompts] = useState([]);
   function requestReset() {
     if (session.shots.length || session.editorSettings) setResetPending(true);
     else session.retake();
@@ -50,10 +51,24 @@ export default function App() {
     setTemplateId(id);
     setEditorSettings(null);
   }
-  function continueToCapture() {
-    if (!template) return;
+  function continueToCapture(id, prompts, style) {
+    if (id !== template?.id) selectTemplate(id);
+    if (prompts) setPosePrompts(prompts);
+    if (style) {
+      session.setMotionStyle(style === 'live' || style === 'boomerang' ? style : 'standard');
+      session.setMode(style === 'live' || style === 'boomerang' ? 'live' : 'photo');
+    }
     setLayoutChosen(true);
     navigate('/booth');
+  }
+  function continueWithUploads(id, uploadedShots) {
+    selectTemplate(id);
+    setPosePrompts([]);
+    session.setMode('photo');
+    session.setMotionStyle('standard');
+    session.acceptUploadedShots(uploadedShots);
+    setLayoutChosen(true);
+    navigate('/edit');
   }
   let content;
   if (page === 'home')
@@ -70,10 +85,10 @@ export default function App() {
     content = (
       <TemplatesPage
         template={template}
-        onSelect={selectTemplate}
         locked={shots.length > 0}
         captured={shots.length}
         onContinue={continueToCapture}
+        onUpload={continueWithUploads}
         onStartOver={requestReset}
       />
     );
@@ -90,16 +105,16 @@ export default function App() {
         onStartOver={requestReset}
       />
     );
-  else content = <CapturePage session={{ ...session, retake: requestReset }} />;
+  else content = <CapturePage session={{ ...session, retake: requestReset }} posePrompts={posePrompts} />;
   return (
     <div
       className={`app ${page === 'home' ? 'home-app' : page === 'booth' ? 'booth-app' : page === 'templates' ? 'templates-app' : page === 'editor' ? 'editor-app' : ''}`}
     >
-      {page !== 'home' && (
+      {page === 'editor' && (
         <WorkflowSteps page={page} layoutChosen={layoutChosen} completed={completed} />
       )}
       {content}
-      <Footer showHomeContent={page === 'home'} />
+      {(page === 'home' || page === 'editor') && <Footer showHomeContent={page === 'home'} />}
       {resetPending && (
         <Dialog
           title="Start a new session?"
@@ -107,7 +122,17 @@ export default function App() {
           initialFocus=".keep-session"
         >
           <p>Your photos and edits will be cleared. Download anything you want to keep first.</p>
-          <div className="dialog-actions">
+          <div className={
+            'dialog-actions [&>.button]:min-h-[50px]! [&>.button]:rounded-[10px]! ' +
+            '[&>.button]:[border:2px_solid_#000]! [&>.button]:[background:#fff]! ' +
+            '[&>.button]:text-black! [&>.button]:px-5! [&>.button]:py-3! ' +
+            '[&>.button]:font-extrabold! [&>.button]:shadow-none! ' +
+            '[&>.button]:transition-[background-color,color]! [&>.button]:duration-[180ms]! ' +
+            '[&>.button]:ease-[var(--ease)]! motion-reduce:[&>.button]:transition-none! ' +
+            '[&>.button:is(:hover,:active):enabled]:[background:#000]! ' +
+            '[&>.button:is(:hover,:active):enabled]:text-white! ' +
+            '[&>.button:is(:hover,:active):enabled]:[transform:none]!'
+          }>
             <button
               className="button button-outline keep-session"
               onClick={() => setResetPending(false)}

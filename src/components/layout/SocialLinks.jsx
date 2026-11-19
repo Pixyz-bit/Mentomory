@@ -42,9 +42,15 @@ function SocialIcon({ name }) {
 
 export default function SocialLinks() {
   return (
-    <nav className="footer-socials" aria-label="Social links">
+    <nav className="flex max-w-full flex-wrap justify-center gap-2 justify-self-end [@media(max-width:600px)]:justify-self-center" aria-label="Social links">
       {links.map(({ name, href }) => (
-        <a key={name} href={href} aria-label={name} title={name}>
+        <a
+          key={name}
+          href={href}
+          aria-label={name}
+          title={name}
+          className="box-border grid size-11 flex-none place-items-center rounded-[10px] border border-solid border-[#e5e5e5] bg-white text-black! hover:border-black hover:bg-black hover:text-white! [&>svg]:size-5"
+        >
           <SocialIcon name={name} />
         </a>
       ))}

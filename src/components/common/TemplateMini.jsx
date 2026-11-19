@@ -2,8 +2,41 @@ import { frameRects, layoutSize } from '../../lib/collage.js';
 const samplePhoto = `${import.meta.env.BASE_URL}landing-contact-sheet.webp`;
 const wideSamplePhoto = `${import.meta.env.BASE_URL}template-wide-original-couple.png`;
 
-export default function TemplateMini({ template }) {
-  const { width, height, padding, footer } = layoutSize(template);
+export default function TemplateMini({ template, diagram, sampleOffset = 0 }) {
+  const { width, height, padding, footer, gap } = layoutSize(template);
+  if (diagram) {
+    const paired = diagram === 'paired';
+    const diagramWidth = paired ? 2 * (width - padding) + gap : width;
+    return (
+      <svg className="template-mini" viewBox={`0 0 ${diagramWidth} ${height}`} aria-hidden="true">
+        <rect width={diagramWidth} height={height} rx="25" fill="currentColor" />
+        {frameRects(template).map((frame, index) => {
+          const x = paired ? 2 * frame.x - padding : frame.x;
+          return (
+            <g key={index}>
+              <rect {...frame} x={x} fill="#eeeeee" />
+              {paired && (
+                <rect
+                  {...frame}
+                  x={x + frame.width + gap}
+                  fill="#d4d4d4"
+                />
+              )}
+            </g>
+          );
+        })}
+        {!paired && (
+          <rect
+            x={width * 0.35}
+            y={height - padding - footer * 0.6}
+            width={width * 0.3}
+            height={footer * 0.15}
+            fill="var(--mini-photo)"
+          />
+        )}
+      </svg>
+    );
+  }
   return (
     <svg className="template-mini" viewBox={`0 0 ${width} ${height}`} aria-hidden="true">
       <rect width={width} height={height} rx="25" fill="currentColor" />
@@ -21,7 +54,7 @@ export default function TemplateMini({ template }) {
             <svg
               width={frame.width}
               height={frame.height}
-              viewBox={`${i % 2} ${Math.floor((i % 4) / 2)} 1 1`}
+              viewBox={`${(i + sampleOffset) % 2} ${Math.floor(((i + sampleOffset) % 4) / 2)} 1 1`}
               preserveAspectRatio="xMidYMin slice"
               overflow="hidden"
             >
@@ -40,4 +73,3 @@ export default function TemplateMini({ template }) {
     </svg>
   );
 }
-

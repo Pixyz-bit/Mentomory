@@ -12,18 +12,19 @@ after(() => server.close());
 const { templates } = await server.ssrLoadModule('/src/data/templates.js');
 const template = templates.find((item) => item.id === 'strip-four');
 const render = (Component, props) => renderToStaticMarkup(React.createElement(Component, props));
-test('layout screen shows all cards and selected Continue action', async () => {
+test('layout screen shows all cards and confirms the selected preview inline', async () => {
   const { default: Page } = await server.ssrLoadModule('/src/pages/templates/TemplatesPage.jsx');
   const html = render(Page, { template, locked: false, captured: 0 });
-  assert.equal((html.match(/class="template-choice(?: |")/g) || []).length, 21);
-  assert.match(html, /Continue to camera/);
+  assert.equal((html.match(/class="template-choice(?: |")/g) || []).length, 9);
+  assert.match(html, /selection-actions[\s\S]*Next: Choose a layout/);
+  assert.match(html, /<strong>Upload photos<\/strong>/);
+  assert.doesNotMatch(html, /<dialog/);
+  assert.match(render(Page, { template, locked: true }), /Return to camera/);
   assert.match(html, /data-filtered="false"/);
   assert.match(html, /aria-pressed="true"/);
-  assert.match(html, /aria-label="Photo count"/);
-  assert.match(html, /<select aria-label="Photo count"/);
+  assert.doesNotMatch(html, /aria-label="Photo count"/);
   assert.doesNotMatch(html, /template-categories|Pick for me|template-search|type="search"/);
-  for (const count of [1, 2, 3, 4, 6, 8, 9])
-    assert.match(html, new RegExp('>' + count + ' photos?<'));
+  assert.doesNotMatch(html, />[1-4] photos?</);
   const { default: Tools } = await server.ssrLoadModule(
     '/src/components/templates/TemplateTools.jsx'
   );
@@ -31,11 +32,13 @@ test('layout screen shows all cards and selected Continue action', async () => {
   assert.match(filtered, /<option value="8" selected="">8 photos/);
   assert.equal((filtered.match(/selected=""/g) || []).length, 1);
 });
-test('fresh layout screen offers all choices without a selection or Continue action', async () => {
+test('fresh layout screen previews Classic strip and can continue', async () => {
   const { default: Page } = await server.ssrLoadModule('/src/pages/templates/TemplatesPage.jsx');
   const html = render(Page, { template: null, locked: false, captured: 0 });
-  assert.equal((html.match(/class="template-choice(?: |")/g) || []).length, 21);
-  assert.doesNotMatch(html, /aria-pressed="true"|selection-actionbar|Continue to camera/);
+  assert.equal((html.match(/class="template-choice(?: |")/g) || []).length, 9);
+  assert.doesNotMatch(html, /<h2>Classic strip<\/h2>/);
+  assert.match(html, /class="template-choice selected"[^>]*>[\s\S]*?<strong>4-cut<\/strong>/);
+  assert.match(html, /selection-actions[\s\S]*Next: Choose a layout/);
 });
 test('shutter capture gating and cancellation remain explicit', async () => {
   const { default: Actions } = await server.ssrLoadModule(
@@ -54,7 +57,7 @@ test('shutter capture gating and cancellation remain explicit', async () => {
   assert.match(render(Actions, { ...props, countdown: 3 }), /Cancel countdown/);
   assert.match(render(Actions, { ...props, status: 'recording' }), /Cancel recording/);
 });
-test('capture grid preserves slot order and has no individual retakes and preserves clip downloads', async () => {
+test('capture grid preserves slot order and offers a preview for captured slots and preserves clip downloads', async () => {
   const { default: Gallery } = await server.ssrLoadModule(
     '/src/components/capture/CapturedGallery.jsx'
   );
@@ -66,7 +69,7 @@ test('capture grid preserves slot order and has no individual retakes and preser
     retakeIndex: null,
   });
   assert.equal((html.match(/class="capture-slot /g) || []).length, 4);
-  assert.doesNotMatch(html, /Retake clip|thumbnail-retake/);
+  assert.match(html, /aria-label="Preview clip 1"/);
   assert.match(html, /download="mentomory-live-1.mp4"/);
   assert.match(html, /Awaiting clip 4/);
   assert.doesNotMatch(html, /<figcaption/);
@@ -84,6 +87,7 @@ test('capture grid preserves slot order and has no individual retakes and preser
       shots: [],
       status: 'ready',
       cameraActive: true,
+      setMirror: () => {},
       sticker: 'none',
       stickerReady: true,
       retakeIndex: null,
@@ -92,20 +96,22 @@ test('capture grid preserves slot order and has no individual retakes and preser
       overlay: { current: null },
     },
   });
-  const sidebar = page.slice(page.indexOf('<aside class="capture-sidebar"'));
-  assert.ok(page.indexOf('class="capture-camera"') < page.indexOf('class="capture-sidebar"'));
-  assert.match(sidebar, /Captured photos/);
+  const actions = page.slice(page.indexOf('<section class="capture-action-bar"'));
+  assert.doesNotMatch(page, /class="capture-sidebar"/);
+  assert.match(page, /<details class="capture-settings" name="booth-camera-panel">/);
+  assert.match(page, /Captured photos/);
+  assert.match(actions, /Back to layout/);
   assert.match(page, /<section class="camera-workspace" aria-label="Camera workspace"/);
-  assert.doesNotMatch(sidebar, /aria-label="Take photo"/);
-  assert.doesNotMatch(sidebar, /name="capture-tools"/);
+  assert.doesNotMatch(actions, /aria-label="Take photo"|name="capture-tools"/);
   const camera = page.slice(
     page.indexOf('class="capture-camera"'),
-    page.indexOf('<aside class="capture-sidebar"')
+    page.indexOf('<section class="capture-action-bar"')
   );
-  assert.match(camera, /camera-tools capture-tools/);
-  assert.match(camera, /camera-tool-stickers/);
-  assert.match(camera, /camera-tool-settings/);
-  assert.equal((camera.match(/<details /g) || []).length, 2);
+  assert.match(camera, /camera-effect-carousel/);
+  assert.match(camera, /aria-label="Previous effects"/);
+  assert.match(camera, /aria-label="Next effects"/);
+  assert.match(camera, /aria-label="Mirror photo"/);
+  assert.doesNotMatch(camera, /camera-tool-settings|camera-toggle-label|booth-bar/);
   assert.doesNotMatch(page, /<aside class="capture-controls"/);
   assert.doesNotMatch(camera, /sticker-search|type="search"/);
   assert.match(camera, /floating-shutter/);
@@ -114,7 +120,9 @@ test('capture grid preserves slot order and has no individual retakes and preser
   assert.match(camera, /aria-label="Take photo"/);
   assert.doesNotMatch(camera, /shutter-label|shutter-timer/);
   assert.doesNotMatch(page, /tool-drawer|Strike a pose/);
-  assert.match(sidebar, /Continue to customize/);
+  assert.match(actions, /<button[^>]* disabled=""[^>]*><span role="status"[^>]*><span aria-hidden="true">0\/4 captured<\/span>/);
+  assert.match(actions, /0 of 4 photos captured/);
+  assert.match(actions, /class="button button-outline capture-back"/);
 });
 test('camera idle offers activation and connecting state avoids duplicate activation', async () => {
   const { default: Preview } = await server.ssrLoadModule(
@@ -133,7 +141,8 @@ test('camera idle offers activation and connecting state avoids duplicate activa
   };
   assert.match(render(Preview, props), /Enable camera/);
   assert.doesNotMatch(render(Preview, { ...props, status: 'loading' }), /Enable camera/);
-  assert.match(render(Preview, { ...props, retakeIndex: 2 }), /Photo 3 of 4/);
+  assert.match(render(Preview, { ...props, status: 'loading' }), /Cancel connection/);
+  assert.doesNotMatch(render(Preview, props), /camera-toggle-label|booth-bar/);
 });
 test('editor shows six tool tabs with one active category', async () => {
   const { default: Options } = await server.ssrLoadModule(
@@ -197,7 +206,7 @@ test('shared header contains reachable steps between logo and Home with guarded 
   );
 });
 
-test('collapsible camera settings retain mode guards, countdown, mirror and device controls', async () => {
+test('collapsible camera settings show countdown without camera selection', async () => {
   const { default: Settings } = await server.ssrLoadModule(
     '/src/components/capture/PhotoSettings.jsx'
   );
@@ -217,15 +226,14 @@ test('collapsible camera settings retain mode guards, countdown, mirror and devi
     ],
   };
   const html = render(Settings, props);
-  assert.match(html, /<details class="settings-panel"/);
-  assert.match(html, /<summary class="tools-heading">Settings/);
+  assert.match(html, /<details class="settings-panel\b/);
+  assert.match(html, /<summary class="tools-heading\b[^"]*">Settings/);
   assert.doesNotMatch(html, /<details[^>]* open=/);
   assert.match(html, /aria-label="Camera settings"/);
-  assert.match(html, /aria-label="Capture mode"/);
-  assert.match(html, /<button[^>]*disabled=""[^>]*>Live/);
+  assert.doesNotMatch(html, /Capture mode|>Live/);
   assert.match(html, /Countdown/);
   assert.match(html, /aria-label="Mirror photo"/);
-  assert.match(html, /Back camera/);
+  assert.doesNotMatch(html, /Back camera|<select/);
   const { default: Mode } = await server.ssrLoadModule('/src/components/capture/CaptureMode.jsx');
   const locked = render(Mode, { ...props, templateLocked: true, mp4Supported: true });
   assert.equal((locked.match(/disabled=""/g) || []).length, 2);
@@ -302,7 +310,7 @@ test('gallery uses uniform media cells for mixed output layouts and live downloa
     busy: false,
   });
   assert.match(html, /Download clip 1 as MP4/);
-  assert.doesNotMatch(html, /Retake clip|thumbnail-retake/);
+  assert.match(html, /aria-label="Preview clip 1"/);
 });
 
 test('supplied icons retain decorative semantics and tracking errors expose an available retry', async () => {
@@ -335,7 +343,7 @@ test('supplied icons retain decorative semantics and tracking errors expose an a
   assert.doesNotMatch(html, /<button[^>]*disabled[^>]*>Retry face tracking/);
 });
 
-test('capture review offers one whole-set Redo and countdown offers three fixed presets', async () => {
+test('capture review offers Continue and Back and countdown offers three fixed presets', async () => {
   const { default: Page } = await server.ssrLoadModule('/src/pages/capture/CapturePage.jsx');
   const html = render(Page, {
     session: {
@@ -353,7 +361,9 @@ test('capture review offers one whole-set Redo and countdown offers three fixed 
       delay: 7,
     },
   });
-  assert.match(html, /Redo all photos/);
+  assert.match(html, /Continue/);
+  assert.match(html, /Back to layout/);
+  assert.doesNotMatch(html, /Redo all photos/);
   assert.doesNotMatch(html, /thumbnail-retake|Cancel retake|Start over/);
   const { default: Settings } = await server.ssrLoadModule(
     '/src/components/capture/PhotoSettings.jsx'

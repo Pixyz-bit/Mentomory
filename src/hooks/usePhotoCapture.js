@@ -14,9 +14,12 @@ export default function usePhotoCapture({
   shots,
   sequence,
   setAutoCapture = () => {},
+  autoStart = true,
   template,
   mode,
+  motion,
   mirror,
+  photoEffect = 'none',
   delay,
   sticker,
   face,
@@ -131,7 +134,9 @@ export default function usePhotoCapture({
             ctx.translate(canvas.width, 0);
             ctx.scale(-1, 1);
           }
+          ctx.filter = photoEffect;
           ctx.drawImage(source, 0, 0, canvas.width, canvas.height);
+          ctx.filter = 'none';
           const result = face.latest.current;
           if (sticker !== 'none' && result && performance.now() - result.timestamp < 600)
             (face.draw || drawSticker)(ctx, result.points, canvas.width, canvas.height, sticker);
@@ -141,13 +146,23 @@ export default function usePhotoCapture({
         {
           signal: controller.signal,
           realtime: true,
+          ...motion,
           onProgress: setRecordProgress,
         }
       );
       if (id !== requestId.current) return;
       const url = URL.createObjectURL(blob);
       shotUrls.current.push(url);
-      saveShot({ url, poster, blob, type: 'live', width: canvas.width, height: canvas.height });
+      saveShot({
+        url,
+        poster,
+        blob,
+        type: 'live',
+        width: canvas.width,
+        height: canvas.height,
+        fps: motion?.fps,
+        seconds: motion?.boomerang ? 2 * motion.seconds - 2 / motion.fps : motion?.seconds,
+      });
     } catch (err) {
       if (id === requestId.current) stopSequence();
       if (id === requestId.current && err.name !== 'AbortError') {
@@ -196,7 +211,9 @@ export default function usePhotoCapture({
       ctx.translate(canvas.width, 0);
       ctx.scale(-1, 1);
     }
+    ctx.filter = photoEffect;
     ctx.drawImage(source, 0, 0);
+    ctx.filter = 'none';
     if (stickerPoints)
       (face.draw || drawSticker)(ctx, stickerPoints, canvas.width, canvas.height, sticker);
     setFlash(true);
@@ -256,7 +273,7 @@ export default function usePhotoCapture({
     if (captureLock.current || status !== 'ready' || countdown !== null || completed) return;
     captureLock.current = true;
     sequenceShots.current = shots;
-    activeSequence.current = delay > 0 && retakeIndex === null;
+    activeSequence.current = autoStart && delay > 0 && retakeIndex === null;
     setAutoCapture(activeSequence.current);
     setError('');
     scheduleCapture();

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { templates } from '../data/templates.js';
-import { supportsMp4 } from '../lib/media/live-media.js';
+import { LIVE_SECONDS, motionStyles, supportsMp4 } from '../lib/media/live-media.js';
 import { useFaceStickers } from './useFaceStickers.js';
 import useCamera from './useCamera.js';
 import usePhotoCapture from './usePhotoCapture.js';
@@ -15,6 +15,7 @@ export default function useBoothSession() {
   const timer = useRef(null);
   const sequence = useRef(false);
   const [autoCapture, setAutoCapture] = useState(false);
+  const [autoStart, setAutoStart] = useState(true);
   const shotUrls = useRef([]);
   const recording = useRef(null);
   const [shots, setShots] = useState([]);
@@ -25,8 +26,6 @@ export default function useBoothSession() {
   const template = templates.find((item) => item.id === templateId);
   const [status, setStatus] = useState('idle');
   const [error, setError] = useState('');
-  const [devices, setDevices] = useState([]);
-  const [deviceId, setDeviceId] = useState('');
   const [mirror, setMirror] = useState(true);
   const [selectedDelay, setSelectedDelay] = useState(3);
   const delay = [0, 3, 5].includes(selectedDelay) ? selectedDelay : 3;
@@ -34,7 +33,11 @@ export default function useBoothSession() {
   const [countdown, setCountdown] = useState(null);
   const [flash, setFlash] = useState(false);
   const [sticker, setSticker] = useState('none');
+  const [photoEffect, setPhotoEffect] = useState('none');
   const [mode, setMode] = useState('photo');
+  const [motionStyle, setMotionStyle] = useState('standard');
+  const motion = motionStyles[motionStyle];
+  const recordingSeconds = motion?.seconds ?? LIVE_SECONDS;
   const [mp4Supported, setMp4Supported] = useState(null);
   const [recordProgress, setRecordProgress] = useState(0);
   const completed = Boolean(template && shots.length === template.count && retakeIndex === null);
@@ -48,8 +51,6 @@ export default function useBoothSession() {
     cancelCountdown,
     setError,
     setStatus,
-    setDeviceId,
-    setDevices,
     setRecordProgress,
   });
   const { page, setPage } = useWorkflow({
@@ -94,9 +95,12 @@ export default function useBoothSession() {
     shots,
     sequence,
     setAutoCapture,
+    autoStart,
     template,
     mode,
+    motion,
     mirror,
+    photoEffect,
     delay,
     sticker,
     face,
@@ -128,7 +132,7 @@ export default function useBoothSession() {
     setFlash(false);
     setError('');
     setRecordProgress(0);
-    openCamera(deviceId);
+    openCamera();
   }
   function retake() {
     requestId.current++;
@@ -155,7 +159,7 @@ export default function useBoothSession() {
     setRetakeIndex(index);
     setError('');
     if (stream.current?.active) setStatus('ready');
-    else openCamera(deviceId);
+    else openCamera();
   }
   function cancelRetake() {
     if (busy) return;
@@ -164,13 +168,21 @@ export default function useBoothSession() {
     setError('');
     setStatus(shots.length === template.count ? 'review' : 'idle');
   }
+  function acceptUploadedShots(uploadedShots) {
+    shotUrls.current.push(...uploadedShots.map(({ url }) => url));
+    setShots(uploadedShots);
+    setStatus('review');
+  }
   const busy =
     autoCapture || countdown !== null || ['loading', 'saving', 'recording'].includes(status);
   const reviewing = status === 'review';
   const templateLocked = busy || shots.length > 0;
   return {
     shots,
+    acceptUploadedShots,
     autoCapture,
+    autoStart,
+    setAutoStart,
     redoAll,
     retakeIndex,
     retakePhoto,
@@ -184,8 +196,6 @@ export default function useBoothSession() {
     setEditorSettings,
     status,
     error,
-    devices,
-    deviceId,
     mirror,
     setMirror,
     delay,
@@ -194,9 +204,14 @@ export default function useBoothSession() {
     flash,
     sticker,
     setSticker,
+    photoEffect,
+    setPhotoEffect,
     page,
     mode,
     setMode,
+    motionStyle,
+    setMotionStyle,
+    recordingSeconds,
     mp4Supported,
     recordProgress,
     completed,

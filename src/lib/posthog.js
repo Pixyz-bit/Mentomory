@@ -5,14 +5,7 @@ const posthogHost = import.meta.env.VITE_POSTHOG_HOST;
 export const analyticsProperties = { app: 'pixbooth', environment: import.meta.env.MODE };
 export const posthogEnabled = Boolean(typeof window !== 'undefined' && posthogKey && posthogHost);
 
-if (!posthogEnabled) {
-  if (import.meta.env.DEV && typeof window !== 'undefined') {
-    const missingVariable = !posthogKey ? 'VITE_POSTHOG_KEY' : 'VITE_POSTHOG_HOST';
-    throw new Error(
-      `${missingVariable} variable required by PostHog is missing or un-configured, this causes events to be silently missed. This error stops appearing once ${missingVariable} is configured`
-    );
-  }
-} else {
+if (posthogEnabled) {
   posthog.init(posthogKey, {
     api_host: posthogHost,
     ui_host: 'https://us.posthog.com',

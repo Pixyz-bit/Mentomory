@@ -5,18 +5,18 @@ import { filterLayouts, layoutPhotoCounts } from '../src/lib/layout-categories.j
 import { replaceCapturedShot } from '../src/lib/capture-state.js';
 import { makeEditHistory, editHistoryReducer } from '../src/lib/edit-history.js';
 import { frameRects, layoutSize } from '../src/lib/collage.js';
-test('photo-count buttons cover every layout exactly once and preserve all 21 choices', () => {
-  assert.equal(templates.length, 21);
-  assert.equal(filterLayouts(templates).length, 21);
+test('photo-count buttons cover every layout exactly once and preserve all 23 choices', () => {
+  assert.equal(templates.length, 23);
+  assert.equal(filterLayouts(templates).length, 23);
   const counts = layoutPhotoCounts(templates);
   assert.deepEqual(counts, [1, 2, 3, 4, 6, 8, 9]);
   const filtered = counts.flatMap((count) => filterLayouts(templates, { count }));
-  assert.equal(new Set(filtered.map((item) => item.id)).size, 21);
-  assert.equal(filtered.length, 21);
+  assert.equal(new Set(filtered.map((item) => item.id)).size, 23);
+  assert.equal(filtered.length, 23);
 });
 test('name search combines with exact photo counts, including separate 6, 8 and 9 choices', () => {
   const strips = filterLayouts(templates, { query: 'STRIP', count: 4 });
-  assert.equal(strips.length, 1);
+  assert.deepEqual(strips.map((item) => item.id), ['strip-four', 'square-strip']);
   assert.ok(strips.every((item) => item.count === 4 && item.name.toLowerCase().includes('strip')));
   for (const count of [6, 8, 9]) {
     const matches = filterLayouts(templates, { count });
@@ -25,7 +25,7 @@ test('name search combines with exact photo counts, including separate 6, 8 and 
   }
   assert.deepEqual(filterLayouts(templates, { query: 'unmatched layout' }), []);
 });
-test('all 21 accurate layout diagrams retain ordered output geometry', () => {
+test('all 23 accurate layout diagrams retain ordered output geometry', () => {
   for (const template of templates) {
     const size = layoutSize(template),
       rects = frameRects(template);

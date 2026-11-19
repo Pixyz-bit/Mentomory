@@ -10,8 +10,6 @@ export default function useCamera({
   cancelCountdown,
   setError,
   setStatus,
-  setDeviceId,
-  setDevices,
   setRecordProgress,
 }) {
   function releaseCamera() {
@@ -19,7 +17,7 @@ export default function useCamera({
     stream.current = null;
     if (video.current) video.current.srcObject = null;
   }
-  async function openCamera(selected = '') {
+  async function openCamera() {
     const id = ++requestId.current;
     cancelCountdown();
     releaseCamera();
@@ -33,35 +31,42 @@ export default function useCamera({
       return;
     }
     try {
-      const next = await navigator.mediaDevices.getUserMedia({
+      const media = navigator.mediaDevices;
+      const resolution = { width: { ideal: 1920 }, height: { ideal: 1440 } };
+      let next = await media.getUserMedia({
         audio: false,
-        video: selected
-          ? {
-              deviceId: {
-                exact: selected,
-              },
-              width: {
-                ideal: 1920,
-              },
-              height: {
-                ideal: 1440,
-              },
-            }
-          : {
-              facingMode: 'user',
-              width: {
-                ideal: 1920,
-              },
-              height: {
-                ideal: 1440,
-              },
-            },
+        video: { ...resolution, facingMode: 'user' },
       });
       if (id !== requestId.current) {
         next.getTracks().forEach((track) => track.stop());
         return;
       }
       stream.current = next;
+      // Device labels generally become available after camera permission is granted.
+      try {
+        const devices = await media.enumerateDevices();
+        const builtIn = devices.find(
+          ({ kind, label, deviceId }) =>
+            kind === 'videoinput' && deviceId && /integrated|built[ -]?in|facetime|internal camera/i.test(label)
+        );
+        if (id !== requestId.current) return;
+        if (builtIn && builtIn.deviceId !== next.getVideoTracks()[0].getSettings().deviceId) {
+          const preferred = await media.getUserMedia({
+            audio: false,
+            video: { ...resolution, deviceId: { exact: builtIn.deviceId } },
+          });
+          if (id !== requestId.current) {
+            preferred.getTracks().forEach((track) => track.stop());
+            return;
+          }
+          releaseCamera();
+          next = preferred;
+          stream.current = next;
+        }
+      } catch {
+        // Keep the browser-selected camera if the integrated one cannot be identified or opened.
+      }
+      if (id !== requestId.current) return;
       const track = next.getVideoTracks()[0];
       track.onended = () => {
         if (stream.current !== next) return;
@@ -72,7 +77,6 @@ export default function useCamera({
         setStatus('idle');
         setError('The camera disconnected. Reconnect it and enable the camera again.');
       };
-      setDeviceId(track.getSettings().deviceId || selected);
       if (!video.current) await new Promise((resolve) => requestAnimationFrame(resolve));
       if (id !== requestId.current || !video.current) {
         next.getTracks().forEach((track) => track.stop());
@@ -84,12 +88,6 @@ export default function useCamera({
       if (posthogEnabled) posthog.capture('camera_enabled');
       logPosthogInfo('camera ready', { media_mode: 'camera' });
       setStatus('ready');
-      try {
-        const all = await navigator.mediaDevices.enumerateDevices();
-        if (id === requestId.current) setDevices(all.filter((item) => item.kind === 'videoinput'));
-      } catch {
-        /* Capture remains available if camera enumeration is unsupported. */
-      }
     } catch (err) {
       if (id !== requestId.current) return;
       releaseCamera();

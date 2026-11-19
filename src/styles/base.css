@@ -1,8 +1,8 @@
 * {
-  box-sizing: border-box;
+  @apply [box-sizing:border-box];
 }
 body {
-  margin: 0;
+  @apply m-[0];
   background-image: radial-gradient(#bdd0eb 0.8px, transparent 0.8px);
   background-size: 20px 20px;
 }
@@ -10,11 +10,11 @@ button,
 select,
 input {
   font: inherit;
-  color: inherit;
+  @apply [color:inherit];
 }
 button,
 a {
-  touch-action: manipulation;
+  @apply [touch-action:manipulation];
 }
 button,
 a,
@@ -24,17 +24,17 @@ summary {
 }
 button,
 summary {
-  cursor: pointer;
+  @apply [cursor:pointer];
 }
 button:disabled {
-  cursor: not-allowed;
-  opacity: 0.45;
+  @apply [cursor:not-allowed];
+  @apply [opacity:0.45];
 }
 a {
-  color: inherit;
+  @apply [color:inherit];
 }
 svg {
-  flex-shrink: 0;
+  @apply [flex-shrink:0];
 }
 button:focus-visible,
 a:focus-visible,
@@ -43,54 +43,54 @@ input:focus-visible,
 summary:focus-visible,
 [tabindex='0']:focus-visible {
   outline: 3px solid #111;
-  outline-offset: 3px;
+  @apply [outline-offset:3px];
 }
 ::selection {
-  background: #111;
-  color: #fff;
+  @apply [background:#111];
+  @apply [color:#fff];
 }
 .app {
-  width: 100%;
-  padding: 0 24px;
-  min-height: 100dvh;
-  display: flex;
-  flex-direction: column;
+  @apply w-[100%];
+  @apply [padding:0_24px];
+  @apply min-h-[100dvh];
+  @apply flex;
+  @apply flex-col;
 }
 .wordmark {
-  display: flex;
-  align-items: center;
-  font-size: 24px;
-  font-weight: 700;
-  letter-spacing: -0.03em;
-  text-decoration: none;
+  @apply flex;
+  @apply items-center;
+  @apply text-[24px];
+  @apply [font-weight:700];
+  @apply [letter-spacing:-0.03em];
+  @apply [text-decoration:none];
 }
 .brand-icon {
-  display: grid;
-  place-items: center;
-  width: 36px;
-  height: 36px;
-  border-radius: 9px;
-  margin-right: 10px;
-  background: #111;
-  color: #fff;
+  @apply grid;
+  @apply [place-items:center];
+  @apply w-[36px];
+  @apply h-[36px];
+  @apply rounded-[9px];
+  @apply mr-[10px];
+  @apply [background:#111];
+  @apply [color:#fff];
 }
 main {
-  min-width: 0;
+  @apply min-w-[0];
 }
 .intro {
-  padding: 16px 0 18px;
-  flex-shrink: 0;
+  @apply [padding:16px_0_18px];
+  @apply [flex-shrink:0];
 }
 .intro h1 {
-  font-size: 28px;
-  letter-spacing: -0.03em;
-  line-height: 1.15;
-  margin: 0 0 6px;
-  font-weight: 700;
+  @apply text-[28px];
+  @apply [letter-spacing:-0.03em];
+  @apply leading-[1.15];
+  @apply [margin:0_0_6px];
+  @apply [font-weight:700];
 }
 .intro p {
-  color: var(--muted);
-  font-size: 13px;
-  line-height: 1.5;
-  margin: 0;
+  @apply [color:var(--muted)];
+  @apply text-[13px];
+  @apply leading-[1.5];
+  @apply m-[0];
 }

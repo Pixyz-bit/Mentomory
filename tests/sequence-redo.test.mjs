@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
+import { LIVE_SECONDS, motionStyles } from '../src/lib/media/live-media.js';
 const source = (
   await fs.readFile(new URL('../src/hooks/useBoothSession.js', import.meta.url), 'utf8')
 )
@@ -12,6 +13,8 @@ const factory = new Function(
   'useState',
   'templates',
   'supportsMp4',
+  'motionStyles',
+  'LIVE_SECONDS',
   'useFaceStickers',
   'useCamera',
   'usePhotoCapture',
@@ -75,6 +78,8 @@ function harness(t) {
     useState,
     [{ id: 'strip-four', name: 'Classic strip', count: 2 }],
     () => new Promise(() => {}),
+    motionStyles,
+    LIVE_SECONDS,
     () => ({ state: 'tracking' }),
     (props) => {
       camera = props;

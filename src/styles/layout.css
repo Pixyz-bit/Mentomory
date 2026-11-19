@@ -1,57 +1,57 @@
 .booth-layout {
-  display: grid;
-  grid-template-columns: 220px minmax(0, 1fr) 360px;
-  gap: 16px;
-  min-height: 0;
+  @apply grid;
+  @apply [grid-template-columns:220px_minmax(0,_1fr)_360px];
+  @apply gap-[16px];
+  @apply min-h-[0];
 }
 .panel,
 .booth,
 .preview-panel,
 .settings-panel {
-  border: 2px solid #111;
-  border-radius: 18px;
-  background: #fff;
-  box-shadow: none;
+  @apply [border:2px_solid_#111];
+  @apply rounded-[18px];
+  @apply [background:#fff];
+  @apply [box-shadow:none];
 }
 .sidebar-column {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  min-width: 0;
-  min-height: 0;
+  @apply flex;
+  @apply flex-col;
+  @apply gap-[12px];
+  @apply min-w-[0];
+  @apply min-h-[0];
 }
 .template-rail {
-  min-width: 0;
-  min-height: 0;
-  flex-shrink: 0;
+  @apply min-w-[0];
+  @apply min-h-[0];
+  @apply [flex-shrink:0];
 }
 .template-rail[open] {
-  display: flex;
-  flex-direction: column;
+  @apply flex;
+  @apply flex-col;
 }
 .template-rail::details-content {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  min-height: 0;
+  @apply flex;
+  @apply flex-col;
+  @apply [flex:1];
+  @apply min-h-[0];
 }
 summary {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  list-style: none;
-  gap: 12px;
-  padding: 14px 16px;
-  font-size: 14px;
-  font-weight: 700;
+  @apply flex;
+  @apply items-center;
+  @apply justify-between;
+  @apply [list-style:none];
+  @apply gap-[12px];
+  @apply [padding:14px_16px];
+  @apply text-[14px];
+  @apply [font-weight:700];
 }
 summary::-webkit-details-marker {
-  display: none;
+  @apply hidden;
 }
 summary > span {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+  @apply flex;
+  @apply items-center;
+  @apply gap-[8px];
 }
 .settings-chevron {
   transition: transform 0.18s ease;

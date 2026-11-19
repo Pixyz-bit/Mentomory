@@ -1,135 +1,135 @@
 .sticker-panel {
-  min-height: 0;
-  flex-shrink: 0;
+  @apply min-h-[0];
+  @apply [flex-shrink:0];
 }
 .sticker-panel[open] {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
+  @apply flex;
+  @apply flex-col;
+  @apply [flex:1];
 }
 .sticker-panel::details-content {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  min-height: 0;
+  @apply flex;
+  @apply flex-col;
+  @apply [flex:1];
+  @apply min-h-[0];
 }
 .sticker-content {
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  flex: 1;
-  padding: 0 12px 12px;
+  @apply flex;
+  @apply flex-col;
+  @apply min-h-[0];
+  @apply [flex:1];
+  @apply [padding:0_12px_12px];
 }
 .sticker-toolbar {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 74px;
-  gap: 8px;
+  @apply grid;
+  @apply [grid-template-columns:minmax(0,_1fr)_74px];
+  @apply gap-[8px];
   align-items: end;
-  flex-shrink: 0;
+  @apply [flex-shrink:0];
 }
 .sticker-toolbar label {
-  font-size: 10px;
-  font-weight: 700;
+  @apply text-[10px];
+  @apply [font-weight:700];
 }
 .sticker-toolbar input,
 .sticker-toolbar select {
-  display: block;
-  width: 100%;
-  min-width: 0;
-  min-height: 32px;
-  border: 1px solid #a1a1aa;
-  border-radius: 6px;
-  padding: 6px 8px;
-  margin-top: 4px;
-  background: #fff;
-  font-size: 11px;
+  @apply block;
+  @apply w-[100%];
+  @apply min-w-[0];
+  @apply min-h-[32px];
+  @apply [border:1px_solid_#a1a1aa];
+  @apply rounded-[6px];
+  @apply [padding:6px_8px];
+  @apply mt-[4px];
+  @apply [background:#fff];
+  @apply text-[11px];
 }
 .sticker-toolbar .sticker-category select {
-  margin-top: 4px;
+  @apply mt-[4px];
 }
 .sticker-selection {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 6px;
-  font-size: 11px;
-  padding: 8px 0;
-  flex-shrink: 0;
+  @apply flex;
+  @apply justify-between;
+  @apply items-center;
+  @apply gap-[6px];
+  @apply text-[11px];
+  @apply [padding:8px_0];
+  @apply [flex-shrink:0];
 }
 .sticker-selection > span {
-  font-weight: 700;
+  @apply [font-weight:700];
 }
 .sticker-selection .text-button {
-  font-size: 10px;
+  @apply text-[10px];
 }
 .sticker-browser {
-  overflow-y: auto;
-  flex: 1;
-  min-height: 70px;
-  padding: 3px;
-  overscroll-behavior: contain;
+  @apply [overflow-y:auto];
+  @apply [flex:1];
+  @apply min-h-[70px];
+  @apply p-[3px];
+  @apply [overscroll-behavior:contain];
   scrollbar-gutter: stable;
 }
 .sticker-options {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 6px;
+  @apply grid;
+  @apply [grid-template-columns:repeat(3,_minmax(0,_1fr))];
+  @apply gap-[6px];
 }
 .sticker-option {
-  display: flex;
-  align-items: center;
-  flex-direction: column;
-  gap: 4px;
-  padding: 8px 2px;
-  border: 1.5px solid #111;
-  border-radius: 9px;
-  background: #fff;
-  font-size: 10px;
-  font-weight: 700;
+  @apply flex;
+  @apply items-center;
+  @apply flex-col;
+  @apply gap-[4px];
+  @apply [padding:8px_2px];
+  @apply [border:1.5px_solid_#111];
+  @apply rounded-[9px];
+  @apply [background:#fff];
+  @apply text-[10px];
+  @apply [font-weight:700];
 }
 .sticker-icon {
-  width: 40px;
-  height: 40px;
-  background: #fff;
-  border-radius: 5px;
+  @apply w-[40px];
+  @apply h-[40px];
+  @apply [background:#fff];
+  @apply rounded-[5px];
 }
 .sticker-option span {
-  overflow-wrap: anywhere;
-  line-height: 1.25;
+  @apply [overflow-wrap:anywhere];
+  @apply leading-[1.25];
 }
 .sticker-empty {
-  font-size: 11px;
-  line-height: 1.6;
-  text-align: center;
+  @apply text-[11px];
+  @apply leading-[1.6];
+  @apply text-center;
 }
 .sticker-empty .text-button {
-  display: block;
-  margin: 8px auto;
+  @apply block;
+  @apply [margin:8px_auto];
 }
 .sticker-status {
-  color: var(--muted);
-  font-size: 11px;
-  line-height: 1.5;
-  margin: 10px 2px 0;
-  flex-shrink: 0;
+  @apply [color:var(--muted)];
+  @apply text-[11px];
+  @apply leading-[1.5];
+  @apply [margin:10px_2px_0];
+  @apply [flex-shrink:0];
 }
 .face-tracking-control {
-  display: block;
-  flex-shrink: 0;
-  margin-bottom: 12px;
-  font-size: 14px;
-  font-weight: 700;
-  line-height: 1.5;
+  @apply block;
+  @apply [flex-shrink:0];
+  @apply mb-[12px];
+  @apply text-[14px];
+  @apply [font-weight:700];
+  @apply leading-[1.5];
 }
 .face-tracking-control select {
-  display: block;
-  width: 100%;
-  min-height: 44px;
-  margin-top: 4px;
-  padding: 8px;
-  border: 1px solid #000;
-  border-radius: 0;
-  background: #fff;
-  color: #000;
-  font-size: 14px;
+  @apply block;
+  @apply w-[100%];
+  @apply min-h-[44px];
+  @apply mt-[4px];
+  @apply p-[8px];
+  @apply [border:1px_solid_#000];
+  @apply rounded-[0];
+  @apply [background:#fff];
+  @apply [color:#000];
+  @apply text-[14px];
 }
