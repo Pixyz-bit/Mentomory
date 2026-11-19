@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import CameraTools from '../../components/capture/CameraTools.jsx';
 import CameraPreview from '../../components/capture/CameraPreview.jsx';
 import CapturedGallery from '../../components/capture/CapturedGallery.jsx';
@@ -11,6 +12,16 @@ import { poseImage } from '../../data/memePoses.js';
 export default function CapturePage({ session, posePrompts = [] }) {
   const showTrackingNotice =
     session.sticker !== 'none' && session.cameraActive && !session.stickerReady;
+  const [selectedShotIndex, setPreviewIndex] = useState(null);
+  const hasPendingReview = session.reviewShotIndex != null;
+  const previewIndex = session.retakeIndex == null
+    ? selectedShotIndex ?? session.reviewShotIndex ?? null
+    : null;
+  const previewShot = session.shots[previewIndex];
+  const savePreview = () => {
+    setPreviewIndex(null);
+    session.setReviewShotIndex?.(null);
+  };
   const captured = session.shots.length;
   const total = session.template.count;
   const captureUnit = session.mode === 'live' ? 'clip' : 'photo';
@@ -34,6 +45,13 @@ export default function CapturePage({ session, posePrompts = [] }) {
           )}
           <CameraPreview
             {...session}
+            previewShot={previewShot}
+            previewNumber={previewIndex + 1}
+            onSavePreview={hasPendingReview && previewIndex === session.reviewShotIndex ? savePreview : undefined}
+            onRetakePreview={() => {
+              session.retakePhoto(previewIndex);
+              setPreviewIndex(null);
+            }}
             hasNotification={Boolean(session.error) || showTrackingNotice}
             tools={(shutter) => <CameraTools session={session}>{shutter}</CameraTools>}
             settings={
@@ -62,13 +80,13 @@ export default function CapturePage({ session, posePrompts = [] }) {
           </CameraPreview>
         </div>
         <div className="capture-review-column">
-          <CapturedGallery {...session} />
+          <CapturedGallery {...session} previewIndex={previewIndex} onPreview={setPreviewIndex} />
           <section className="capture-action-bar" aria-label="Photo progress and navigation">
             <div className="capture-continue">
               <div className="capture-next-actions">
                 <button
                   className="button button-dark enabled:bg-black! enabled:text-white!"
-                  disabled={!session.completed || session.busy}
+                  disabled={session.busy || !session.completed || hasPendingReview}
                   onClick={() => {
                     if (posthogEnabled)
                       posthog.capture('customization_started', {
@@ -80,24 +98,27 @@ export default function CapturePage({ session, posePrompts = [] }) {
                   }}
                 >
                   <span role="status" className="tabular-nums">
-                    {session.completed
+                    {session.completed && !hasPendingReview
                       ? 'Continue'
                       : session.retakeIndex != null
-                        ? `Retake ${captureUnit} ${session.retakeIndex + 1}`
+                        ? <span className="whitespace-nowrap">Retaking #{session.retakeIndex + 1}</span>
                         : <>
                             <span aria-hidden="true">{captured}/{total} captured</span>
                             <span className="sr-only">{captured} of {total} {captureUnit}s captured</span>
                           </>}
                   </span>
-                  {session.completed && <Icon name="arrow" />}
+                  {session.completed && !hasPendingReview && <Icon name="arrow" />}
                 </button>
               </div>
-              {session.retakeIndex != null && (
-                <button type="button" className="text-button" disabled={session.busy} onClick={session.cancelRetake}>
+              {session.retakeIndex != null ? (
+                <button type="button" className="button button-outline capture-back" disabled={session.busy} onClick={session.cancelRetake}>
                   Cancel retake
                 </button>
+              ) : previewShot ? (
+                <button type="button" className="button button-outline capture-back" disabled={selectedShotIndex == null} onClick={() => setPreviewIndex(null)}>Back</button>
+              ) : (
+                <a className="button button-outline capture-back" href="/templates" onClick={navigateLink} aria-label="Back to layout">Back</a>
               )}
-              <a className="button button-outline capture-back" href="/templates" onClick={navigateLink} aria-label="Back to layout">Back</a>
             </div>
           </section>
         </div>

@@ -16,6 +16,7 @@ const factory = new Function(
   'motionStyles',
   'LIVE_SECONDS',
   'useFaceStickers',
+  'useBackgroundBlur',
   'useCamera',
   'usePhotoCapture',
   'useWorkflow',
@@ -81,6 +82,7 @@ function harness(t) {
     motionStyles,
     LIVE_SECONDS,
     () => ({ state: 'tracking' }),
+    () => ({ status: 'idle' }),
     (props) => {
       camera = props;
       return {

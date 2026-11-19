@@ -20,6 +20,7 @@ export default function usePhotoCapture({
   motion,
   mirror,
   photoEffect = 'none',
+  backgroundBlur,
   delay,
   sticker,
   face,
@@ -33,6 +34,7 @@ export default function usePhotoCapture({
   setStatus,
   setRecordProgress,
   setShots,
+  onReviewShot,
   setFlash,
   setCountdown,
 }) {
@@ -78,6 +80,7 @@ export default function usePhotoCapture({
     });
     sequenceShots.current = next;
     setShots(next);
+    if (!autoStart || delay === 0) onReviewShot?.(captureNumber - 1);
     if (previous) {
       URL.revokeObjectURL(previous.url);
       shotUrls.current = shotUrls.current.filter((url) => url !== previous.url);
@@ -134,8 +137,8 @@ export default function usePhotoCapture({
             ctx.translate(canvas.width, 0);
             ctx.scale(-1, 1);
           }
-          ctx.filter = photoEffect;
-          ctx.drawImage(source, 0, 0, canvas.width, canvas.height);
+          ctx.filter = photoEffect === 'background-blur' ? 'none' : photoEffect;
+          ctx.drawImage(photoEffect === 'background-blur' ? backgroundBlur.canvas.current : source, 0, 0, canvas.width, canvas.height);
           ctx.filter = 'none';
           const result = face.latest.current;
           if (sticker !== 'none' && result && performance.now() - result.timestamp < 600)
@@ -211,8 +214,8 @@ export default function usePhotoCapture({
       ctx.translate(canvas.width, 0);
       ctx.scale(-1, 1);
     }
-    ctx.filter = photoEffect;
-    ctx.drawImage(source, 0, 0);
+    ctx.filter = photoEffect === 'background-blur' ? 'none' : photoEffect;
+    ctx.drawImage(photoEffect === 'background-blur' ? backgroundBlur.canvas.current : source, 0, 0, canvas.width, canvas.height);
     ctx.filter = 'none';
     if (stickerPoints)
       (face.draw || drawSticker)(ctx, stickerPoints, canvas.width, canvas.height, sticker);
@@ -270,6 +273,7 @@ export default function usePhotoCapture({
     }, 1000);
   }
   function takePhoto() {
+    if (photoEffect === 'background-blur' && backgroundBlur?.status !== 'ready') return;
     if (captureLock.current || status !== 'ready' || countdown !== null || completed) return;
     captureLock.current = true;
     sequenceShots.current = shots;

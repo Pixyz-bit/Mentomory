@@ -14,7 +14,7 @@ export default function CaptureActions({
 }) {
   if (countdown !== null)
     return (
-      <button className="button button-outline cancel-capture" onClick={cancelCountdown}>
+      <button className="button button-outline cancel-capture cancel-countdown" onClick={cancelCountdown}>
         Cancel countdown
       </button>
     );

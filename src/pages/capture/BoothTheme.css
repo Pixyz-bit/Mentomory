@@ -73,12 +73,11 @@
   @apply [z-index:14];
 }
 .capture-settings {
-  @apply [right:12px];
-  @apply bottom-2.5;
+  @apply right-3 bottom-3;
 }
 .capture-settings > summary,
 .camera-photo-effects > summary {
-  @apply flex min-h-11 min-w-14 cursor-pointer list-none flex-col items-center justify-center gap-0.5 rounded-xl bg-black/45 px-2.5 py-1.5 text-center text-[10px] font-bold leading-tight text-white;
+  @apply flex min-h-12 w-16 cursor-pointer list-none flex-col items-center justify-center gap-1 rounded-xl bg-black/45 px-2 py-1.5 text-center text-[10px] font-bold leading-tight text-white;
 }
 :is(.capture-settings, .camera-photo-effects) > summary::-webkit-details-marker {
   @apply hidden;
@@ -142,6 +141,9 @@
   @apply [bottom:7px];
   @apply [width:min(400px,_calc(100%_-_24px))];
   @apply gap-[8px];
+}
+.booth-app .floating-shutter:has(.cancel-countdown) {
+  @apply bottom-3;
 }
 .booth-app .floating-shutter:has(.camera-photo-effects) {
   @apply [width:calc(100%_-_24px)];
@@ -439,7 +441,7 @@
 }
 @media (min-width: 900px) and (min-height: 420px) {
   .camera-photo-effects {
-    @apply inset-auto bottom-[3px] left-0;
+    @apply inset-auto bottom-[5px] left-0;
     translate: none;
   }
 }

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { templates } from '../data/templates.js';
 import { LIVE_SECONDS, motionStyles, supportsMp4 } from '../lib/media/live-media.js';
 import { useFaceStickers } from './useFaceStickers.js';
+import useBackgroundBlur from './useBackgroundBlur.js';
 import useCamera from './useCamera.js';
 import usePhotoCapture from './usePhotoCapture.js';
 import useWorkflow from './useWorkflow.js';
@@ -19,6 +20,7 @@ export default function useBoothSession() {
   const shotUrls = useRef([]);
   const recording = useRef(null);
   const [shots, setShots] = useState([]);
+  const [reviewShotIndex, setReviewShotIndex] = useState(null);
   const [retakeIndex, setRetakeIndex] = useState(null);
   const [templateId, setTemplateId] = useState(null);
   const [layoutChosen, setLayoutChosen] = useState(false);
@@ -57,6 +59,7 @@ export default function useBoothSession() {
     completed,
     layoutChosen,
     onLeaveCapture() {
+      setReviewShotIndex(null);
       requestId.current++;
       recording.current?.abort();
       cancelCountdown();
@@ -66,6 +69,7 @@ export default function useBoothSession() {
       setStatus(completed ? 'review' : 'idle');
     },
   });
+  const backgroundBlur = useBackgroundBlur(video, photoEffect === 'background-blur' && cameraActive && page === 'booth');
   const face = useFaceStickers(video, overlay, cameraActive && page === 'booth', sticker);
   const stickerReady = sticker === 'none' || face.state === 'tracking';
   useEffect(() => {
@@ -101,6 +105,7 @@ export default function useBoothSession() {
     motion,
     mirror,
     photoEffect,
+    backgroundBlur,
     delay,
     sticker,
     face,
@@ -115,6 +120,7 @@ export default function useBoothSession() {
     setStatus,
     setRecordProgress,
     setShots,
+    onReviewShot: setReviewShotIndex,
     setFlash,
     setCountdown,
   });
@@ -179,6 +185,8 @@ export default function useBoothSession() {
   const templateLocked = busy || shots.length > 0;
   return {
     shots,
+    reviewShotIndex,
+    setReviewShotIndex,
     acceptUploadedShots,
     autoCapture,
     autoStart,
@@ -205,6 +213,7 @@ export default function useBoothSession() {
     sticker,
     setSticker,
     photoEffect,
+    backgroundBlur,
     setPhotoEffect,
     page,
     mode,

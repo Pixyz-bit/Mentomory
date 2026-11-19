@@ -17,6 +17,7 @@ export default function Icon({ name, size = 20 }) {
       />
     );
   const paths = {
+    check: <path d="m4 10 4 4 8-8" />,
     expand: <path d="M3 8V3h5m4 0h5v5m0 4v5h-5m-4 0H3v-5" />,
     effects: (
       <>
