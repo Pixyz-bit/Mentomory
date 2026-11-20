@@ -1,3 +1,5 @@
+import Icon from '../common/Icon.jsx';
+
 export default function EditorActions({
   live,
   exporting,
@@ -9,17 +11,30 @@ export default function EditorActions({
   error,
   output,
   exportVideo,
-  onStartOver,
+  onBack,
   downloadStatus,
   onDownload,
-  duration = 7,
 }) {
   return (
     <div className="editor-actions">
+      <button
+        type="button"
+        className="button button-outline editor-back"
+        disabled={exporting}
+        onClick={onBack}
+        aria-label="Back to booth"
+      >
+        Back
+      </button>
       {live &&
         (exporting ? (
           <>
-            <progress className="media-progress" value={progress} max="1" aria-label="MP4 export progress" />
+            <progress
+              className="media-progress"
+              value={progress}
+              max="1"
+              aria-label="MP4 export progress"
+            />
             <button className="button button-outline" onClick={() => abort.current?.abort()}>
               Cancel export
             </button>
@@ -32,48 +47,35 @@ export default function EditorActions({
             onClick={() => onDownload('mp4')}
           >
             Download live strip · MP4
+            <Icon name="download" size={18} />
           </a>
         ) : (
           <button className="button button-dark" disabled={busy || !!error} onClick={exportVideo}>
             Create live strip · MP4
           </button>
         ))}
-      {!exporting &&
+      {!live &&
+        !exporting &&
         (!busy && !error && output ? (
           <a
-            className={`button ${live ? 'button-outline' : 'button-dark'}`}
+            className="button button-dark"
             href={output}
             download={`${filename}.jpg`}
             onClick={() => onDownload('jpg')}
           >
-            {live ? 'Download cover photo' : 'Download photo strip'}
+            Download photo strip
+            <Icon name="download" size={18} />
           </a>
         ) : (
           <button className="button button-dark" disabled>
             Applying edits…
           </button>
         ))}
-      {live && (
-        <p className="download-meta">
-          {mp4
-            ? 'MP4 · ' +
-              mp4.width +
-              ' × ' +
-              mp4.height +
-              ' px · ' +
-              Number(duration.toFixed(2)) +
-              ' sec'
-            : 'MP4 · ' + Number(duration.toFixed(2)) + ' sec · up to 1920px on the longest side'}
-        </p>
-      )}
       {downloadStatus && (
         <p className="download-status" role="status" aria-live="polite">
           {downloadStatus}
         </p>
       )}
-      <button className="text-button reset-secondary" disabled={exporting} onClick={onStartOver}>
-        Start over
-      </button>
     </div>
   );
 }

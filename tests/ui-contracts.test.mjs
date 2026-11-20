@@ -14,12 +14,12 @@ const template = templates.find((item) => item.id === 'strip-four');
 const render = (Component, props) => renderToStaticMarkup(React.createElement(Component, props));
 test('layout screen shows all cards and confirms the selected preview inline', async () => {
   const { default: Page } = await server.ssrLoadModule('/src/pages/templates/TemplatesPage.jsx');
-  const html = render(Page, { template, locked: false, captured: 0 });
+  const html = render(Page);
   assert.equal((html.match(/class="template-choice(?: |")/g) || []).length, 9);
   assert.match(html, /selection-actions[\s\S]*Next: Choose a layout/);
   assert.match(html, /<strong>Upload photos<\/strong>/);
   assert.doesNotMatch(html, /<dialog/);
-  assert.match(render(Page, { template, locked: true }), /Return to camera/);
+  assert.doesNotMatch(html, /Return to camera|capture layout is locked/);
   assert.match(html, /data-filtered="false"/);
   assert.match(html, /aria-pressed="true"/);
   assert.doesNotMatch(html, /aria-label="Photo count"/);
@@ -34,7 +34,7 @@ test('layout screen shows all cards and confirms the selected preview inline', a
 });
 test('fresh layout screen previews Classic strip and can continue', async () => {
   const { default: Page } = await server.ssrLoadModule('/src/pages/templates/TemplatesPage.jsx');
-  const html = render(Page, { template: null, locked: false, captured: 0 });
+  const html = render(Page);
   assert.equal((html.match(/class="template-choice(?: |")/g) || []).length, 9);
   assert.doesNotMatch(html, /<h2>Classic strip<\/h2>/);
   assert.match(html, /class="template-choice selected"[^>]*>[\s\S]*?<strong>4-cut<\/strong>/);
@@ -71,6 +71,14 @@ test('capture grid preserves slot order and offers a preview for captured slots 
   assert.equal((html.match(/class="capture-slot /g) || []).length, 4);
   assert.match(html, /aria-label="Preview clip 1"/);
   assert.match(html, /download="mentomory-live-1.mp4"/);
+  const boomerang = render(Gallery, {
+    mode: 'live',
+    motionStyle: 'boomerang',
+    shots: [{ url: 'clip.mp4', type: 'live', poster: 'cover.jpg' }],
+    template,
+  });
+  assert.match(boomerang, /aria-label="Preview clip 1"/);
+  assert.doesNotMatch(boomerang, /download=/);
   assert.match(html, /Awaiting clip 4/);
   assert.doesNotMatch(html, /<figcaption/);
   assert.match(html, /role="group" aria-label="Captured media in layout order"/);
@@ -144,7 +152,7 @@ test('camera idle offers activation and connecting state avoids duplicate activa
   assert.match(render(Preview, { ...props, status: 'loading' }), /Cancel connection/);
   assert.doesNotMatch(render(Preview, props), /camera-toggle-label|booth-bar/);
 });
-test('editor shows six tool tabs with one active category', async () => {
+test('editor groups frame and background options under one tab', async () => {
   const { default: Options } = await server.ssrLoadModule(
     '/src/components/editor/EditorOptions.jsx'
   );
@@ -154,10 +162,12 @@ test('editor shows six tool tabs with one active category', async () => {
     error: '',
     available: [template],
   });
-  assert.equal((html.match(/role="tab"/g) || []).length, 6);
+  assert.equal((html.match(/role="tab"/g) || []).length, 5);
   assert.equal((html.match(/aria-selected="true"/g) || []).length, 1);
   assert.match(html, /role="tabpanel"/);
   assert.match(html, /Frames/);
+  assert.match(html, /Background design/);
+  assert.doesNotMatch(html, /role="tab"[^>]*>Backgrounds/);
 });
 test('downloads retain JPG/MP4 format and truthful download-request feedback', async () => {
   const { default: Actions } = await server.ssrLoadModule(
@@ -183,8 +193,10 @@ test('downloads retain JPG/MP4 format and truthful download-request feedback', a
     mp4: { url: 'strip.mp4', width: 640, height: 1920 },
   });
   assert.match(liveHtml, /download="pixbooth.mp4"/);
-  assert.match(liveHtml, /MP4 · 640 × 1920 px/);
-  assert.match(liveHtml, /Download cover photo/);
+  assert.doesNotMatch(liveHtml, /download-meta|Download cover photo|download="[^"]+\.jpg"/);
+  const pendingLiveHtml = render(Actions, { ...props, live: true });
+  assert.match(pendingLiveHtml, /Create live strip/);
+  assert.doesNotMatch(pendingLiveHtml, /download-meta|Download cover photo|1920px/);
 });
 
 test('shared header contains reachable steps between logo and Home with guarded future links', async () => {

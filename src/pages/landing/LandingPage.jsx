@@ -9,10 +9,10 @@ import LandingDetails from '../../components/landing/LandingDetails.jsx';
 import LandingClosing from '../../components/landing/LandingClosing.jsx';
 import BrandIntro from '../../components/landing/BrandIntro.jsx';
 
-export default function LandingPage({ onCapture }) {
+export default function LandingPage({ onCapture, showIntro }) {
   return (
     <main className="landing-main">
-      <BrandIntro />
+      {showIntro && <BrandIntro />}
       <div className="landing-section-inner">
         <LandingHero onCapture={onCapture} />
       </div>

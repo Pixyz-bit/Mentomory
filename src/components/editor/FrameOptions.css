@@ -49,7 +49,7 @@
   @apply relative;
   @apply grid;
   @apply [place-items:center];
-  @apply w-[64px];
+  @apply h-[42px] w-full overflow-hidden rounded-[4px] border border-solid border-[#d4d4d8];
   @apply max-w-[100%];
   @apply [background:#fff];
   @apply [color:#000];
@@ -57,7 +57,7 @@
 .frame-thumbnail canvas {
   @apply block;
   @apply w-[100%];
-  @apply [height:auto];
+  @apply h-full;
 }
 .frame-thumbnail > span {
   @apply absolute;

@@ -24,6 +24,40 @@ html:has(.home-app)::-webkit-scrollbar {
   background-size: 32px 32px;
   -webkit-font-smoothing: antialiased;
 }
+.home-app .landing-footer {
+  margin-top: 0;
+  padding-block: 0;
+  background: #000;
+  color: #fff;
+}
+.home-app .landing-footer a:focus-visible {
+  outline-color: #fff;
+}
+.landing-footer-outline {
+  display: flex;
+  justify-content: space-between;
+  width: min(1216px, calc(100% - var(--footer-left) - var(--footer-right)));
+  margin-inline: auto;
+  container-type: inline-size;
+  border-bottom: 1px solid #ffffff30;
+}
+.landing-footer-outline > span {
+  height: 0.78em;
+  overflow: clip;
+  color: transparent;
+  font-size: 14.6cqw;
+  font-weight: 800;
+  line-height: 1;
+  -webkit-text-stroke: 1px #ffffff80;
+  mask-image: linear-gradient(#000 55%, transparent);
+}
+@media (hover: hover) {
+  .landing-footer-outline > span:hover {
+    background: linear-gradient(#fff 15%, #717171 90%);
+    background-clip: text;
+    -webkit-text-stroke-color: transparent;
+  }
+}
 .home-app .landing-main {
   @apply w-[100%];
   @apply [max-width:none];

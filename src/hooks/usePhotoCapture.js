@@ -258,12 +258,9 @@ export default function usePhotoCapture({
     let remaining = delay;
     setCountdown(remaining);
     const id = requestId.current;
-    timer.current = setInterval(() => {
-      if (
-        id !== requestId.current ||
-        !captureLock.current ||
-        (retakeIndex === null && !activeSequence.current)
-      ) {
+    const interval = setInterval(() => {
+      if (timer.current !== interval) return;
+      if (id !== requestId.current || !captureLock.current) {
         clearCountdown();
         return;
       }
@@ -271,6 +268,7 @@ export default function usePhotoCapture({
       if (remaining === 0) take();
       else setCountdown(remaining);
     }, 1000);
+    timer.current = interval;
   }
   function takePhoto() {
     if (photoEffect === 'background-blur' && backgroundBlur?.status !== 'ready') return;

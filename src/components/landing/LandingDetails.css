@@ -135,24 +135,36 @@
 @media (max-width: 600px) {
   .landing-details {
     @apply gap-[24px];
-    @apply [padding-block:40px];
+    padding-block: clamp(28px, 8vw, 40px);
+  }
+
+  .landing-details-intro {
+    text-align: center;
+  }
+
+  .landing-details-intro p {
+    max-width: 34ch;
+  }
+
+  .landing-details-intro :is(h2, p) {
+    margin-inline: auto;
   }
 
   .landing-details h2 {
     @apply mb-[16px];
-    font-size: clamp(28px, 4dvh, 32px);
+    font-size: clamp(1.5rem, 1rem + 3vw, 1.875rem);
   }
 
   .landing-details p {
-    @apply text-[16px];
+    font-size: clamp(0.875rem, 0.8rem + 0.3vw, 0.95rem);
     @apply leading-[1.6];
   }
 
   .landing-details summary {
-    @apply min-h-[64px];
+    min-height: 54px;
     @apply gap-[16px];
     @apply [padding-block:16px];
-    @apply text-[18px];
+    font-size: clamp(0.9375rem, 0.82rem + 0.55vw, 1.0625rem);
   }
 
   .landing-details details p {

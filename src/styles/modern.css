@@ -918,7 +918,6 @@ input::placeholder {
   @apply w-[100%];
   @apply text-[14px];
 }
-.download-meta,
 .download-status {
   @apply [margin:8px_0_0];
   @apply text-[12px];

@@ -29,6 +29,24 @@ export function layoutSize(template) {
     height: cellHeight * template.rows + gap * (template.rows - 1) + padding * 2 + footer,
   };
 }
+export function pairLayout(template) {
+  const slots =
+    template.slots ??
+    Array.from({ length: template.count }, (_, index) => [
+      index % template.cols,
+      Math.floor(index / template.cols),
+      1,
+      1,
+    ]);
+  return {
+    ...template,
+    cols: 2 * template.cols,
+    slots: slots.flatMap(([x, y, width, height]) => [
+      [2 * x, y, width, height],
+      [2 * x + width, y, width, height],
+    ]),
+  };
+}
 export function frameRects(template) {
   const size = layoutSize(template);
   return (

@@ -6,7 +6,7 @@ import Icon from '../../components/common/Icon.jsx';
 import Brand from '../../components/common/Brand.jsx';
 import Dialog from '../../components/common/Dialog.jsx';
 import TemplateMini from '../../components/common/TemplateMini.jsx';
-import { pickerLayouts, templates } from '../../data/templates.js';
+import { pickerLayouts } from '../../data/templates.js';
 import { memePoses, poseImage } from '../../data/memePoses.js';
 import { frameRects, layoutSize } from '../../lib/collage.js';
 
@@ -33,13 +33,8 @@ const pickerTabs = [
 const initialPrompts = (layout) =>
   Array.from({ length: layout.count }, (_, index) => memePoses[index % memePoses.length]);
 
-export default function TemplatesPage({ template, locked, onContinue, onUpload, onStartOver }) {
-  const [preview, setPreview] = useState(
-    () =>
-      pickerLayouts.find((item) => item.id === template?.id) ??
-      (locked ? template : null) ??
-      defaultLayout
-  );
+export default function TemplatesPage({ onContinue, onUpload }) {
+  const [preview, setPreview] = useState(defaultLayout);
   const [style, setStyle] = useState('classic');
   const [activeTab, setActiveTab] = useState('style');
   const pickerPanels = useRef(null);
@@ -48,7 +43,7 @@ export default function TemplatesPage({ template, locked, onContinue, onUpload, 
   const [uploading, setUploading] = useState(false);
   useGSAP(
     () => {
-      if (locked || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
       gsap.from('[role="tabpanel"]:not([inert])', {
         opacity: 0,
         x: activeTab === 'layout' ? 24 : -24,
@@ -56,11 +51,11 @@ export default function TemplatesPage({ template, locked, onContinue, onUpload, 
         ease: 'power2.out',
       });
     },
-    { scope: pickerPanels, dependencies: [activeTab, locked], revertOnUpdate: true }
+    { scope: pickerPanels, dependencies: [activeTab], revertOnUpdate: true }
   );
   const [previewExpanded, setPreviewExpanded] = useState(false);
   const layoutTab = useRef(null);
-  const choosingStyle = !locked && activeTab === 'style';
+  const choosingStyle = activeTab === 'style';
   const [prompts, setPrompts] = useState(() => initialPrompts(preview));
 
   const previewSize = layoutSize(preview);
@@ -70,8 +65,7 @@ export default function TemplatesPage({ template, locked, onContinue, onUpload, 
   const pairedWidth = 2 * (previewSize.width - previewSize.padding) + previewSize.gap;
 
   function openPreview(id) {
-    const layout =
-      pickerLayouts.find((item) => item.id === id) ?? templates.find((item) => item.id === id);
+    const layout = pickerLayouts.find((item) => item.id === id);
     if (layout.id === preview.id) return;
     setPrompts(initialPrompts(layout));
     setPreview(layout);
@@ -89,15 +83,13 @@ export default function TemplatesPage({ template, locked, onContinue, onUpload, 
     event.preventDefault();
     const next = key === 'Home' || (key !== 'End' && activeTab === 'layout') ? 'style' : 'layout';
     setActiveTab(next);
-    currentTarget.querySelector('#picker-tab-' + next)?.focus();
+    currentTarget.querySelector('#picker-tab-' + next)?.focus({ preventScroll: true });
   }
 
   function advancePicker() {
     if (choosingStyle) {
       setActiveTab('layout');
-      layoutTab.current?.focus();
-    } else if (locked) {
-      onContinue(preview.id);
+      layoutTab.current?.focus({ preventScroll: true });
     } else if (style === 'upload') {
       setUploadError('');
       uploadInput.current?.click();
@@ -112,7 +104,9 @@ export default function TemplatesPage({ template, locked, onContinue, onUpload, 
     input.value = '';
     if (!files.length) return;
     if (files.length !== preview.count) {
-      setUploadError(`Select exactly ${preview.count} ${preview.count === 1 ? 'photo' : 'photos'} for this layout.`);
+      setUploadError(
+        `Select exactly ${preview.count} ${preview.count === 1 ? 'photo' : 'photos'} for this layout.`
+      );
       return;
     }
 
@@ -120,21 +114,24 @@ export default function TemplatesPage({ template, locked, onContinue, onUpload, 
     const urls = [];
     let accepted = false;
     try {
-      const shots = await Promise.all(files.map(async (file) => {
-        if (!file.type.startsWith('image/')) throw new Error('Expected an image file');
-        const url = URL.createObjectURL(file);
-        urls.push(url);
-        const image = new Image();
-        image.src = url;
-        await image.decode();
-        return { url, width: image.naturalWidth, height: image.naturalHeight };
-      }));
+      const shots = await Promise.all(
+        files.map(async (file) => {
+          if (!file.type.startsWith('image/')) throw new Error('Expected an image file');
+          const url = URL.createObjectURL(file);
+          urls.push(url);
+          const image = new Image();
+          image.src = url;
+          await image.decode();
+          return { url, width: image.naturalWidth, height: image.naturalHeight };
+        })
+      );
       if (input.isConnected) {
         onUpload(preview.id, shots);
         accepted = true;
       }
     } catch {
-      if (input.isConnected) setUploadError('One or more photos couldn’t be opened. Try JPEG, PNG, or WebP.');
+      if (input.isConnected)
+        setUploadError('One or more photos couldn’t be opened. Try JPEG, PNG, or WebP.');
     } finally {
       if (!accepted) urls.forEach((url) => URL.revokeObjectURL(url));
       if (input.isConnected) setUploading(false);
@@ -190,7 +187,9 @@ export default function TemplatesPage({ template, locked, onContinue, onUpload, 
     <main className="template-main">
       <header className="intro">
         <Brand />
-        <h1 className="sr-only focus:[outline:none]" tabIndex="-1">Pick a style &amp; layout.</h1>
+        <h1 className="sr-only focus:[outline:none]" tabIndex="-1">
+          Pick a style &amp; layout.
+        </h1>
       </header>
       <div className="layout-preview-body">
         <section
@@ -225,121 +224,119 @@ export default function TemplatesPage({ template, locked, onContinue, onUpload, 
           </div>
         </section>
         <aside className="layout-picker-options" aria-label="Layout and photo style">
-          {!locked && (
-            <div
-              className="layout-picker-tabs"
-              data-active-tab={activeTab}
-              role="tablist"
-              aria-label="Photo options"
-              onKeyDown={handleTabKey}
+          <div
+            className="layout-picker-tabs"
+            data-active-tab={activeTab}
+            role="tablist"
+            aria-label="Photo options"
+            onKeyDown={handleTabKey}
+          >
+            {pickerTabs.map(({ id, label, icon }) => (
+              <button
+                type="button"
+                key={id}
+                id={'picker-tab-' + id}
+                ref={id === 'layout' ? layoutTab : null}
+                role="tab"
+                aria-selected={activeTab === id}
+                aria-controls={'picker-panel-' + id}
+                tabIndex={activeTab === id ? 0 : -1}
+                onClick={() => setActiveTab(id)}
+              >
+                <Icon name={icon} size={20} />
+                {label}
+              </button>
+            ))}
+          </div>
+          <div className="layout-picker-panels" ref={pickerPanels}>
+            <section
+              id="picker-panel-style"
+              role="tabpanel"
+              aria-labelledby="picker-tab-style"
+              inert={activeTab !== 'style'}
             >
-              {pickerTabs.map(({ id, label, icon }) => (
+              <div className="layout-style-options">
                 <button
                   type="button"
-                  key={id}
-                  id={'picker-tab-' + id}
-                  ref={id === 'layout' ? layoutTab : null}
-                  role="tab"
-                  aria-selected={activeTab === id}
-                  aria-controls={'picker-panel-' + id}
-                  tabIndex={activeTab === id ? 0 : -1}
-                  onClick={() => setActiveTab(id)}
+                  aria-pressed={style === 'classic'}
+                  onClick={() => setStyle('classic')}
                 >
-                  <Icon name={icon} size={20} />
-                  {label}
+                  <img
+                    className="layout-style-image"
+                    src={`${import.meta.env.BASE_URL}template-wide-original-couple.png`}
+                    alt=""
+                  />
+                  <strong>Classic</strong>
+                  <span>Pose however you like.</span>
                 </button>
-              ))}
-            </div>
-          )}
-          <div className="layout-picker-panels" ref={pickerPanels}>
-            {!locked && (
-              <section
-                id="picker-panel-style"
-                role="tabpanel"
-                aria-labelledby="picker-tab-style"
-                inert={activeTab !== 'style'}
-              >
-                <div className="layout-style-options">
+                <button
+                  type="button"
+                  aria-pressed={style === 'meme'}
+                  onClick={() => setStyle('meme')}
+                >
+                  <div className="layout-style-image layout-style-meme-grid">
+                    {memePoses.slice(0, 4).map((pose) => (
+                      <img key={pose.image} src={poseImage(pose)} alt="" />
+                    ))}
+                  </div>
+                  <strong>Meme poses</strong>
+                  <span>Copy a meme pose.</span>
+                </button>
+                {motionOptions.map((option) => (
                   <button
                     type="button"
-                    aria-pressed={style === 'classic'}
-                    onClick={() => setStyle('classic')}
+                    key={option.id}
+                    aria-pressed={style === option.id}
+                    onClick={() => setStyle(option.id)}
                   >
-                    <img
-                      className="layout-style-image"
-                      src={`${import.meta.env.BASE_URL}template-wide-original-couple.png`}
-                      alt=""
-                    />
-                    <strong>Classic</strong>
-                    <span>Pose however you like.</span>
-                  </button>
-                  <button
-                    type="button"
-                    aria-pressed={style === 'meme'}
-                    onClick={() => setStyle('meme')}
-                  >
-                    <div className="layout-style-image layout-style-meme-grid">
-                      {memePoses.slice(0, 4).map((pose) => (
-                        <img key={pose.image} src={poseImage(pose)} alt="" />
-                      ))}
-                    </div>
-                    <strong>Meme poses</strong>
-                    <span>Copy a meme pose.</span>
-                  </button>
-                  {motionOptions.map((option) => (
-                    <button
-                      type="button"
-                      key={option.id}
-                      aria-pressed={style === option.id}
-                      onClick={() => setStyle(option.id)}
-                    >
-                      <picture>
-                        {option.id === 'boomerang' && (
-                          <source
-                            media="(prefers-reduced-motion: reduce)"
-                            srcSet={`${import.meta.env.BASE_URL}style-previews/still.webp`}
-                          />
-                        )}
-                        <img
-                          className={`layout-style-image${option.id === 'upload' ? ' layout-style-upload-image' : ''}`}
-                          src={`${import.meta.env.BASE_URL}style-previews/${option.id === 'upload' ? 'upload.jpg' : 'boomerang.gif'}`}
-                          alt=""
+                    <picture>
+                      {option.id === 'boomerang' && (
+                        <source
+                          media="(prefers-reduced-motion: reduce)"
+                          srcSet={`${import.meta.env.BASE_URL}style-previews/still.webp`}
                         />
-                      </picture>
-                      <strong>{option.title}</strong>
-                      <span>{option.description}</span>
-                    </button>
-                  ))}
-                </div>
-              </section>
-            )}
+                      )}
+                      <img
+                        className={`layout-style-image${option.id === 'upload' ? ' layout-style-upload-image' : ''}`}
+                        src={`${import.meta.env.BASE_URL}style-previews/${option.id === 'upload' ? 'upload.jpg' : 'boomerang.gif'}`}
+                        alt=""
+                      />
+                    </picture>
+                    <strong>{option.title}</strong>
+                    <span>{option.description}</span>
+                  </button>
+                ))}
+              </div>
+            </section>
             <div
               id="picker-panel-layout"
-              data-cuts={!locked || undefined}
-              role={locked ? undefined : 'tabpanel'}
-              aria-labelledby={locked ? undefined : 'picker-tab-layout'}
-              inert={!locked && activeTab !== 'layout'}
+              data-cuts
+              role="tabpanel"
+              aria-labelledby="picker-tab-layout"
+              inert={activeTab !== 'layout'}
             >
-              {locked && <h2>Layout</h2>}
               <TemplateCatalog
-                layouts={locked ? templates : pickerLayouts}
-                showFilters={locked}
-                diagram={locked ? undefined : style === 'meme' ? 'paired' : 'classic'}
+                layouts={pickerLayouts}
+                showFilters={false}
+                diagram={style === 'meme' ? 'paired' : 'classic'}
                 template={preview}
-                locked={locked}
                 onSelect={openPreview}
               />
             </div>
           </div>
           <div className="selection-actions">
-            {!locked && style === 'upload' && (
-              <input ref={uploadInput} type="file" accept="image/*" multiple hidden onChange={importPhotos} />
+            {style === 'upload' && (
+              <input
+                ref={uploadInput}
+                type="file"
+                accept="image/*"
+                multiple
+                hidden
+                onChange={importPhotos}
+              />
             )}
-            {style === 'upload' && !choosingStyle && uploadError && <p role="alert">{uploadError}</p>}
-            {locked && (
-              <button type="button" className="text-button" onClick={onStartOver}>
-                Start over
-              </button>
+            {style === 'upload' && !choosingStyle && uploadError && (
+              <p role="alert">{uploadError}</p>
             )}
             <button
               type="button"
@@ -347,8 +344,14 @@ export default function TemplatesPage({ template, locked, onContinue, onUpload, 
               onClick={advancePicker}
               disabled={uploading}
             >
-              {locked ? 'Return to camera' : choosingStyle ? 'Next: Choose a layout' : style === 'upload' ? (uploading ? 'Opening photos…' : 'Upload photos') : 'Continue to camera'}
-              {choosingStyle || (!locked && style === 'upload') ? (
+              {choosingStyle
+                ? 'Next: Choose a layout'
+                : style === 'upload'
+                  ? uploading
+                    ? 'Opening photos…'
+                    : 'Upload photos'
+                  : 'Continue to camera'}
+              {choosingStyle || style === 'upload' ? (
                 <Icon name="arrow" />
               ) : (
                 <Icon name="shutter" size={24} />

@@ -12,7 +12,7 @@ export default function BrandIntro() {
   useGSAP(() => {
     const motion = gsap.matchMedia();
     motion.add('(prefers-reduced-motion: no-preference)', () => {
-      const sequence = gsap.timeline({ onComplete: () => setDone(true) });
+      const sequence = gsap.timeline({ onComplete: () => setDone(true) }).timeScale(1.12);
       sequence
         .set(intro.current, { autoAlpha: 1 })
         .fromTo('.brand-intro-camera', { xPercent: 102.28, scale: 0.9, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.24, ease: 'power2.out' })

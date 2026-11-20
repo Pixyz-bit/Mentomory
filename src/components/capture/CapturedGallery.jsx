@@ -2,7 +2,7 @@ import Icon from '../common/Icon.jsx';
 
 const thumbnailMedia = 'absolute inset-0 block h-full w-full min-h-0 rounded-[inherit] object-cover';
 
-export default function CapturedGallery({ mode, shots, template, busy, retakeIndex, previewIndex, onPreview }) {
+export default function CapturedGallery({ mode, motionStyle, shots, template, busy, retakeIndex, previewIndex, onPreview }) {
   const kind = mode === 'live' ? 'clip' : 'photo';
   const slots = Array.from({ length: template.count });
   return (
@@ -11,7 +11,7 @@ export default function CapturedGallery({ mode, shots, template, busy, retakeInd
       data-mode={mode}
       aria-label={mode === 'live' ? 'Captured clips' : 'Captured photos'}
     >
-      <div className="capture-gallery flex w-full flex-wrap content-start items-start justify-center gap-2 min-[900px]:justify-start" role="group" aria-label="Captured media in layout order">
+      <div className="capture-gallery flex w-full flex-wrap content-start items-start justify-center gap-2 min-[900px]:justify-start" role="group" aria-label="Captured media in layout order" style={{ '--visible-slots': Math.min(4, slots.length) }}>
         {slots.map((_, index) => {
           const shot = shots[index];
           return (
@@ -43,7 +43,7 @@ export default function CapturedGallery({ mode, shots, template, busy, retakeInd
                       </span>
                     )}
                   </button>
-                  {shot.type === 'live' && (
+                  {shot.type === 'live' && motionStyle !== 'boomerang' && (
                     <a
                       className="clip-download pointer-events-none absolute left-2 top-2 z-[2] grid size-11 place-items-center rounded-[var(--control-radius)] border border-solid border-[color:var(--line)] bg-[var(--paper)] text-[color:var(--ink)] opacity-0 group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100 [@media(hover:none)]:pointer-events-auto [@media(hover:none)]:opacity-100"
                       aria-label={'Download clip ' + (index + 1) + ' as MP4'}

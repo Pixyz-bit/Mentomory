@@ -8,7 +8,6 @@ import Icon from '../../components/common/Icon.jsx';
 import Brand from '../../components/common/Brand.jsx';
 import posthog, { posthogEnabled } from '../../lib/posthog.js';
 import { navigate, navigateLink } from '../../lib/navigation.js';
-import { poseImage } from '../../data/memePoses.js';
 export default function CapturePage({ session, posePrompts = [] }) {
   const showTrackingNotice =
     session.sticker !== 'none' && session.cameraActive && !session.stickerReady;
@@ -34,17 +33,9 @@ export default function CapturePage({ session, posePrompts = [] }) {
       </header>
       <section className="camera-workspace" aria-label="Camera workspace">
         <div className="capture-camera">
-          {prompt && (
-            <div className="capture-pose-prompt" aria-live="polite">
-              <img src={poseImage(prompt)} alt="" width="40" height="40" />
-              <span>
-                <strong>{prompt.title}</strong>
-                <span>{prompt.cue}</span>
-              </span>
-            </div>
-          )}
           <CameraPreview
             {...session}
+            posePrompt={prompt}
             previewShot={previewShot}
             previewNumber={previewIndex + 1}
             onSavePreview={hasPendingReview && previewIndex === session.reviewShotIndex ? savePreview : undefined}

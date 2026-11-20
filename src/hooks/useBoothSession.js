@@ -6,8 +6,7 @@ import useBackgroundBlur from './useBackgroundBlur.js';
 import useCamera from './useCamera.js';
 import usePhotoCapture from './usePhotoCapture.js';
 import useWorkflow from './useWorkflow.js';
-import { navigate } from '../lib/navigation.js';
-// Session ownership stays above the pages so breadcrumb navigation retains captures.
+// The session survives navigation between capture and the editor.
 export default function useBoothSession() {
   const video = useRef(null);
   const overlay = useRef(null);
@@ -20,6 +19,7 @@ export default function useBoothSession() {
   const shotUrls = useRef([]);
   const recording = useRef(null);
   const [shots, setShots] = useState([]);
+  const [posePrompts, setPosePrompts] = useState([]);
   const [reviewShotIndex, setReviewShotIndex] = useState(null);
   const [retakeIndex, setRetakeIndex] = useState(null);
   const [templateId, setTemplateId] = useState(null);
@@ -55,10 +55,10 @@ export default function useBoothSession() {
     setStatus,
     setRecordProgress,
   });
-  const { page, setPage } = useWorkflow({
+  const page = useWorkflow({
     completed,
     layoutChosen,
-    onLeaveCapture() {
+    onLeaveCapture(next) {
       setReviewShotIndex(null);
       requestId.current++;
       recording.current?.abort();
@@ -66,10 +66,31 @@ export default function useBoothSession() {
       releaseCamera();
       setFlash(false);
       setRecordProgress(0);
-      setStatus(completed ? 'review' : 'idle');
+      setStatus(next !== 'templates' && completed ? 'review' : 'idle');
+      if (next === 'templates') {
+        shotUrls.current.forEach((url) => URL.revokeObjectURL(url));
+        shotUrls.current = [];
+        setShots((current) => (current.length ? [] : current));
+        setPosePrompts((current) => (current.length ? [] : current));
+        setLayoutChosen(false);
+        setTemplateId(null);
+        setRetakeIndex(null);
+        setEditorSettings(null);
+        setMode('photo');
+        setMotionStyle('standard');
+        setError('');
+        setMirror(true);
+        setSelectedDelay(3);
+        setAutoStart(true);
+        setSticker('none');
+        setPhotoEffect('none');
+      }
     },
   });
-  const backgroundBlur = useBackgroundBlur(video, photoEffect === 'background-blur' && cameraActive && page === 'booth');
+  const backgroundBlur = useBackgroundBlur(
+    video,
+    photoEffect === 'background-blur' && cameraActive && page === 'booth'
+  );
   const face = useFaceStickers(video, overlay, cameraActive && page === 'booth', sticker);
   const stickerReady = sticker === 'none' || face.state === 'tracking';
   useEffect(() => {
@@ -140,25 +161,6 @@ export default function useBoothSession() {
     setRecordProgress(0);
     openCamera();
   }
-  function retake() {
-    requestId.current++;
-    recording.current?.abort();
-    cancelCountdown();
-    releaseCamera();
-    navigate('/templates');
-    setPage('templates');
-    setLayoutChosen(false);
-    setTemplateId(null);
-    shotUrls.current.forEach((url) => URL.revokeObjectURL(url));
-    shotUrls.current = [];
-    setShots([]);
-    setRetakeIndex(null);
-    setEditorSettings(null);
-    setStatus('idle');
-    setFlash(false);
-    setError('');
-    setRecordProgress(0);
-  }
   function retakePhoto(index) {
     if (busy || !shots[index]) return;
     cancelCountdown();
@@ -185,6 +187,8 @@ export default function useBoothSession() {
   const templateLocked = busy || shots.length > 0;
   return {
     shots,
+    posePrompts,
+    setPosePrompts,
     reviewShotIndex,
     setReviewShotIndex,
     acceptUploadedShots,
@@ -236,6 +240,5 @@ export default function useBoothSession() {
     stopCamera,
     cancelCountdown,
     takePhoto,
-    retake,
   };
 }

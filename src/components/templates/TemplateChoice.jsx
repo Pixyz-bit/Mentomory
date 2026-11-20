@@ -1,7 +1,7 @@
-import { layoutSize } from '../../lib/collage.js';
+import { layoutSize, pairLayout } from '../../lib/collage.js';
 import TemplateMini from '../common/TemplateMini.jsx';
 export default function TemplateChoice({ item, selected, locked, onSelect, diagram }) {
-  const { width, height } = layoutSize(item);
+  const { width, height } = layoutSize(diagram === 'paired' ? pairLayout(item) : item);
   return (
     <button
       className={'template-choice ' + (selected ? 'selected' : '')}

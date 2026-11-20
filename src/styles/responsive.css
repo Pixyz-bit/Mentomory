@@ -282,10 +282,11 @@
     @apply w-[100%];
   }
   .booth-app .camera-frame-area {
-    --preview-height: 80cqw;
+    --preview-height: clamp(92cqw, calc(100svh - 213px), 140cqw);
   }
   .booth-app .viewfinder {
-    @apply [aspect-ratio:5_/_4];
+    height: var(--preview-height);
+    aspect-ratio: auto;
   }
   .booth-app .camera-tool-toggle {
     @apply w-[44px];
@@ -320,7 +321,7 @@
   :is(.home-app .landing-copy, .templates-app .intro, .booth-app .capture-intro) h1 {
     font-size: clamp(32px, 6svh, 40px);
   }
-  :is(.home-app .landing-copy, .templates-app .intro, .booth-app .capture-intro) .brand-logo {
+  :is(.home-app .landing-copy, .templates-app .intro, .booth-app .capture-intro, .editor-app .editor-brand-header) .brand-logo {
     @apply w-[180px];
   }
   .home-app .landing-showcase {
@@ -354,6 +355,83 @@
 @media (max-width: 600px) {
   .home-app {
     --ribbon-gap: 28px;
+  }
+
+  .home-app .landing-hero {
+    height: auto;
+    min-height: 90svh;
+    gap: clamp(10px, 3vw, 16px);
+  }
+
+  .home-app .landing-formats {
+    min-height: 10svh;
+  }
+
+  .home-app .landing-copy {
+    padding-inline: 10px;
+  }
+
+  .home-app .landing-copy > .wordmark {
+    margin-bottom: 22px;
+  }
+
+  .home-app .landing-copy h1 {
+    margin-bottom: 12px;
+    font-size: clamp(2rem, 1.3rem + 4vw, 2.5rem);
+  }
+
+  .home-app .landing-copy > p {
+    max-width: 34ch;
+    margin: 0 auto 12px;
+    font-size: clamp(0.875rem, 0.8rem + 0.3vw, 0.95rem);
+    text-wrap: pretty;
+  }
+
+  .home-app .landing-capture.button-dark {
+    min-height: 46px;
+    padding-block: 8px;
+    font-size: 0.875rem;
+  }
+
+  .home-app .landing-privacy {
+    margin-top: 6px;
+  }
+
+  .home-app .landing-art-stage {
+    flex: 1 0 clamp(200px, 64vw, 300px);
+    place-items: center;
+  }
+
+  .home-app .landing-showcase {
+    --print-size: min(calc((100cqh - 32px) / 1.31), calc((100cqw - 20px) / 1.32), 210px);
+    padding-bottom: 0;
+  }
+
+  .home-app .landing-how {
+    padding-bottom: 36px;
+  }
+
+  .home-app .landing-how-heading {
+    margin-bottom: 16px;
+  }
+
+  .home-app .landing-how h2 {
+    font-size: clamp(1.5rem, 1rem + 2.5vw, 2rem);
+  }
+
+  .home-app .landing-how-steps {
+    gap: 20px;
+  }
+
+  .home-app .landing-how-artwork {
+    height: clamp(125px, 40vw, 180px);
+    grid-template-rows: minmax(0, 1fr);
+    margin-bottom: 8px;
+  }
+
+  .home-app .landing-how-step h3 {
+    margin-bottom: 6px;
+    font-size: 1.125rem;
   }
 }
 
@@ -415,12 +493,15 @@
 .editor-app .editor-tool-panel {
   @apply [max-height:min(48dvh,_420px)];
   @apply min-h-[0];
+  @apply px-1.5 py-2;
   @apply [overflow-y:auto];
   @apply [overflow-x:hidden];
   @apply [touch-action:pan-y_pinch-zoom];
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-y: auto;
   scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: #a1a1aa transparent;
 }
 .editor-app .editor-tool-panel:focus-visible {
   outline: 3px solid var(--ink);
@@ -449,7 +530,7 @@
 
 /* Give the tool list the space freed by a compact download section. */
 .editor-app .editor-download-area {
-  @apply [padding-block:16px];
+  @apply p-0;
 }
 .editor-app .editor-actions {
   @apply gap-[8px];
@@ -461,10 +542,17 @@
 /* Keep the image visible while the rest of the mobile editor scrolls below it. */
 @media (max-width: 700px), (max-width: 1000px) and (max-height: 419px) {
   html:has(.editor-app) {
-    scroll-padding-top: calc(min(46dvh, 400px) + 24px + env(safe-area-inset-top, 0px));
+    --editor-preview-height: min(46svh, 400px);
+    --editor-preview-top: env(safe-area-inset-top, 0px);
+    scroll-padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px));
+    scroll-padding-top: calc(var(--editor-preview-height) + var(--editor-preview-top) + 60px);
   }
+  .app.editor-app .editor-main {
+    padding-bottom: 0;
+  }
+
   .editor-app .editor-layout {
-    @apply gap-[16px];
+    row-gap: 0;
   }
   /* Share the controls' grid so the preview stays pinned for the whole editor. */
   .editor-app .editor-artifact {
@@ -472,10 +560,11 @@
   }
   .editor-app .editor-preview {
     @apply sticky;
-    @apply [top:calc(8px_+_env(safe-area-inset-top,_0px))];
+    @apply [background:var(--paper)];
+    top: var(--editor-preview-top);
     @apply [z-index:10];
     @apply [align-self:start];
-    @apply [height:min(46dvh,_400px)];
+    height: var(--editor-preview-height);
     @apply p-[12px];
   }
   .editor-app .editor-stage {
@@ -487,10 +576,346 @@
   .editor-app .edit-history-actions {
     @apply mt-[0];
   }
+  .editor-app .editor-controls {
+    min-height: calc(100dvh - var(--editor-preview-height) - var(--editor-preview-top));
+    grid-template-rows: 1fr auto;
+    gap: 8px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+  }
+
+  .editor-app .editor-tabs {
+    position: sticky;
+    z-index: 9;
+    top: calc(var(--editor-preview-top) + var(--editor-preview-height));
+    background: var(--paper);
+  }
+
+  .editor-app .editor-download-area {
+    position: sticky;
+    z-index: 11;
+    bottom: 0;
+    margin-inline: calc(-1 * var(--safe-left)) calc(-1 * var(--safe-right));
+    padding: 8px var(--safe-right) calc(8px + env(safe-area-inset-bottom, 0px)) var(--safe-left);
+    border-top: 1px solid var(--line);
+    background: var(--paper);
+  }
+
   /* One scroll path below the preview, including tools and downloads. */
   .editor-app .editor-tool-panel {
     @apply [max-height:none];
     @apply overflow-visible;
     scrollbar-gutter: auto;
+    padding-bottom: 3px;
+  }
+}
+
+@media (max-width: 760px) {
+  html:has(.templates-app),
+  .templates-app .layout-preview-body {
+    --picker-top: env(safe-area-inset-top, 0px);
+    --picker-bottom: env(safe-area-inset-bottom, 0px);
+    --picker-action-space: calc(73px + var(--picker-bottom));
+    --picker-tabs-height: 48px;
+    --picker-preview-height: max(
+      100px,
+      calc((100svh - var(--picker-top) - var(--picker-tabs-height) - var(--picker-action-space)) / 2)
+    );
+  }
+
+  html:has(.templates-app) {
+    scroll-padding-block: calc(var(--picker-top) + var(--picker-preview-height) + var(--picker-tabs-height))
+      var(--picker-action-space);
+  }
+
+  .templates-app .template-main {
+    padding-bottom: 0;
+  }
+
+  .templates-app .layout-preview-body {
+    row-gap: 0;
+  }
+
+  .templates-app .layout-preview-stage {
+    position: sticky;
+    z-index: 3;
+    top: var(--picker-top);
+    align-self: start;
+    background: var(--paper);
+  }
+
+  .templates-app .layout-preview-stage .layout-preview-image {
+    --layout-preview-height: calc(var(--picker-preview-height) - 24px);
+    height: var(--picker-preview-height);
+  }
+
+  .templates-app .layout-picker-options {
+    padding: 0 0 var(--picker-action-space);
+    border: 0;
+    background: transparent;
+  }
+
+  .templates-app .layout-picker-tabs {
+    position: sticky;
+    z-index: 2;
+    top: calc(var(--picker-top) + var(--picker-preview-height));
+    margin-bottom: 12px;
+    background: var(--paper);
+  }
+
+  .templates-app .layout-picker-tabs button {
+    flex-direction: column;
+    min-height: var(--picker-tabs-height);
+    gap: 4px;
+    padding: 4px;
+    font-size: 12px;
+  }
+
+  .templates-app .layout-picker-tabs button > svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .templates-app .layout-picker-panels {
+    min-height: calc(
+      100dvh - var(--picker-top) - var(--picker-preview-height) -
+      var(--picker-tabs-height) - var(--picker-action-space)
+    );
+    overflow-anchor: none;
+  }
+
+  .templates-app .layout-picker-panels > [inert] {
+    display: none;
+  }
+
+  .templates-app .layout-picker-panels > [data-cuts]:not([inert]),
+  .templates-app .layout-picker-options [data-cuts] .template-catalog {
+    display: grid;
+  }
+
+  .templates-app .layout-picker-options [data-cuts] .template-choices {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .templates-app .layout-picker-options [data-cuts] .template-choice {
+    grid-template-rows: 56px auto;
+    align-content: center;
+    gap: 4px;
+    padding: 6px 4px;
+  }
+
+  .templates-app .layout-picker-options [data-cuts] .choice-preview {
+    height: 56px;
+    padding: 3px;
+  }
+
+  .templates-app .layout-picker-options [data-cuts] .choice-copy strong {
+    min-height: 0;
+    font-size: 12px;
+  }
+
+  .templates-app .layout-picker-options .selection-actions {
+    position: fixed;
+    z-index: 4;
+    inset: auto 0 0;
+    margin: 0;
+    padding: 8px var(--safe-right) calc(8px + var(--picker-bottom)) var(--safe-left);
+    border-top: 1px solid var(--line);
+    background: var(--paper);
+  }
+}
+
+@media (max-width: 760px) {
+  .booth-app .capture-main {
+    display: flex;
+    flex-direction: column;
+    min-height: 100dvh;
+  }
+
+  .booth-app .camera-workspace {
+    flex: 1;
+    grid-template-rows: 1fr auto;
+    gap: 12px;
+  }
+
+  .booth-app .capture-review-column {
+    position: sticky;
+    z-index: 15;
+    bottom: 0;
+    gap: 8px;
+    background: var(--paper);
+  }
+
+  .booth-app .capture-camera {
+    position: sticky;
+    top: env(safe-area-inset-top, 0px);
+    z-index: 10;
+    align-self: start;
+  }
+
+  .booth-app .capture-review {
+    min-width: 0;
+  }
+
+  .booth-app .capture-gallery {
+    flex-wrap: nowrap;
+    justify-content: safe center;
+    overflow-x: auto;
+    padding: 4px;
+  }
+
+  .booth-app .capture-slot {
+    flex-basis: max(52px, calc((100% + 8px) / var(--visible-slots) - 8px));
+    max-height: 56px;
+  }
+
+  .booth-app .camera-frame-area > :is(.capture-settings, .camera-photo-effects) {
+    z-index: 16;
+    inset: 12px 12px auto auto;
+  }
+
+  .booth-app .camera-frame-area > .camera-photo-effects {
+    top: 62px;
+  }
+
+  .booth-app :is(.capture-settings, .camera-photo-effects) > summary {
+    width: 44px;
+    min-height: 44px;
+    padding: 3px;
+    gap: 2px;
+    border-radius: 8px;
+    font-size: 8px;
+  }
+
+  .booth-app .camera-frame-area > :is(.capture-settings, .camera-photo-effects) > :is(.settings-panel, .camera-photo-effect-options) {
+    inset: calc(100% + 8px) 0 auto auto;
+  }
+
+  .booth-app .camera-frame-area > .capture-settings > .settings-panel {
+    top: calc(100% + 58px);
+  }
+
+  .booth-app .capture-pose-prompt {
+    top: 42px;
+    right: auto;
+    left: 12px;
+  }
+
+  .booth-app .floating-shutter:has(.camera-effect-carousel) {
+    top: calc(var(--preview-height) - 8px);
+    width: calc(100% - 16px);
+  }
+
+  .booth-app .camera-effect-carousel .shutter-button {
+    width: 54px;
+    height: 54px;
+  }
+
+  .booth-app .camera-effect-item {
+    flex-basis: 33px;
+  }
+
+  .booth-app .floating-shutter:has(.cancel-countdown) {
+    top: calc(var(--preview-height) - 14px);
+    bottom: auto;
+    width: min(220px, calc(100% - 32px));
+    transform: translate(-50%, -100%);
+    z-index: 17;
+  }
+
+  .booth-app :is(.capture-settings, .camera-photo-effects) > summary > :is(svg, img) {
+    width: 16px;
+    height: 16px;
+  }
+
+  .booth-app .capture-action-bar {
+    position: static;
+    border-top: 1px solid var(--line);
+  }
+
+  .booth-app .capture-action-bar .capture-continue {
+    padding-block: 10px;
+    border: 0;
+  }
+
+  .booth-app .capture-action-bar .capture-next-actions {
+    width: 100%;
+  }
+}
+
+@media (max-width: 700px) {
+  .templates-app .intro,
+  .booth-app .capture-intro,
+  .editor-app .editor-brand-header {
+    padding-bottom: 8px;
+  }
+
+  .editor-app .editor-preview {
+    padding-top: 6px;
+  }
+}
+
+@media (max-width: 760px) {
+  html:has(.layout-enlarged-dialog:modal) {
+    overflow: hidden;
+  }
+
+  .app .layout-enlarged-dialog {
+    --preview-sheet-inset: max(48px, env(safe-area-inset-top, 0px));
+    --preview-sheet-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+    position: fixed;
+    inset: auto 0 0;
+    width: 100%;
+    max-width: none;
+    max-height: calc(100dvh - var(--preview-sheet-inset));
+    margin: 0;
+    padding: 0 16px var(--preview-sheet-bottom);
+    border-radius: 18px 18px 0 0;
+  }
+
+  .layout-enlarged-dialog .dialog-heading {
+    min-height: 56px;
+    padding-right: 48px;
+    border-bottom: 1px solid #ddd;
+  }
+
+  .layout-enlarged-dialog .dialog-heading h2 {
+    position: static;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    clip-path: none;
+    font-size: 16px;
+  }
+
+  .layout-enlarged-dialog .dialog-close {
+    width: 44px;
+    height: 44px;
+  }
+
+  .layout-enlarged-dialog .layout-preview-image {
+    --layout-preview-height: min(
+      68dvh,
+      calc(100dvh - var(--preview-sheet-inset) - var(--preview-sheet-bottom) - 74px)
+    );
+    padding-top: 12px;
+  }
+
+  .layout-enlarged-dialog .layout-preview-print {
+    width: min(100%, calc(var(--layout-preview-height) * var(--layout-aspect)));
+  }
+}
+
+@media (max-width: 760px) and (prefers-reduced-motion: no-preference) {
+  .app .layout-enlarged-dialog[open] {
+    animation: preview-sheet-enter 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+}
+
+@keyframes preview-sheet-enter {
+  from {
+    transform: translateY(100%);
   }
 }

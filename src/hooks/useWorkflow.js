@@ -23,15 +23,9 @@ function resolvePage(path, completed, layoutChosen) {
   return 'home';
 }
 
-export default function useWorkflow({
-  completed,
-  layoutChosen,
-  onLeaveCapture,
-}) {
+export default function useWorkflow({ completed, layoutChosen, onLeaveCapture }) {
   const [requestedPath, setRequestedPath] = useState(readPath);
-  const [page, setPage] = useState(() =>
-    resolvePage(readPath(), completed, layoutChosen)
-  );
+  const [page, setPage] = useState(() => resolvePage(readPath(), completed, layoutChosen));
 
   const leaveCapture = useRef(onLeaveCapture);
   leaveCapture.current = onLeaveCapture;
@@ -64,15 +58,8 @@ export default function useWorkflow({
 
     const path = paths[next];
 
-    if (
-      window.location.pathname !== path ||
-      window.location.hash.startsWith('#/')
-    ) {
-      window.history.replaceState(
-        null,
-        '',
-        path + window.location.search
-      );
+    if (window.location.pathname !== path || window.location.hash.startsWith('#/')) {
+      window.history.replaceState(null, '', path + window.location.search);
     }
 
     if (requestedPath !== path) {
@@ -82,7 +69,7 @@ export default function useWorkflow({
     setPage(next);
 
     if (next !== 'booth') {
-      leaveCapture.current();
+      leaveCapture.current(next);
     }
   }, [requestedPath, completed, layoutChosen]);
 
@@ -90,5 +77,5 @@ export default function useWorkflow({
     document.querySelector('main h1')?.focus();
   }, [page]);
 
-  return { page, setPage };
+  return page;
 }

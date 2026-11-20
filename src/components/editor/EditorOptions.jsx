@@ -1,22 +1,28 @@
 import { useId, useState } from 'react';
+import Icon from '../common/Icon.jsx';
 import LayoutOptions from './LayoutOptions.jsx';
-import BackgroundOptions from './BackgroundOptions.jsx';
 import FilterOptions from './FilterOptions.jsx';
 import DecorationOptions from './DecorationOptions.jsx';
 import CaptionControl from './CaptionControl.jsx';
 import EditorError from './EditorError.jsx';
 import FrameOptions from './FrameOptions.jsx';
 const tools = [
-  { id: 'frames', label: 'Frames', Component: FrameOptions },
-  { id: 'backgrounds', label: 'Backgrounds', Component: BackgroundOptions },
-  { id: 'filters', label: 'Filters', Component: FilterOptions },
-  { id: 'text', label: 'Text', Component: CaptionControl },
-  { id: 'stickers', label: 'Stickers', Component: DecorationOptions },
-  { id: 'layout', label: 'Layout', Component: LayoutOptions },
+  { id: 'frames', label: 'Frames', icon: 'photo', Component: FrameOptions },
+  { id: 'filters', label: 'Filters', icon: 'effects', Component: FilterOptions },
+  { id: 'text', label: 'Text', icon: 'text', Component: CaptionControl },
+  { id: 'stickers', label: 'Stickers', icon: 'sticker', Component: DecorationOptions },
+  { id: 'layout', label: 'Layout', icon: 'layout', Component: LayoutOptions },
 ];
 export default function EditorOptions(props) {
-  const [active, setActive] = useState('frames'),
-    id = useId();
+  const [{ index: activeIndex, direction }, setTab] = useState({ index: 0, direction: 0 });
+  const active = tools[activeIndex].id;
+  const id = useId();
+
+  function selectTab(index) {
+    setTab((previous) =>
+      index === previous.index ? previous : { index, direction: Math.sign(index - previous.index) }
+    );
+  }
   function navigate(event, index) {
     let target;
     if (event.key === 'ArrowRight') target = (index + 1) % tools.length;
@@ -25,11 +31,14 @@ export default function EditorOptions(props) {
     else if (event.key === 'End') target = tools.length - 1;
     else return;
     event.preventDefault();
-    setActive(tools[target].id);
+    selectTab(target);
     event.currentTarget.parentElement.children[target].focus();
   }
   return (
-    <div className="editor-options">
+    <div
+      className="editor-options"
+      style={{ '--tab-index': activeIndex, '--tab-direction': direction }}
+    >
       <div className="editor-tabs" role="tablist" aria-label="Customization tools">
         {tools.map((tool, index) => (
           <button
@@ -39,9 +48,10 @@ export default function EditorOptions(props) {
             aria-selected={active === tool.id}
             aria-controls={id + '-panel-' + tool.id}
             tabIndex={active === tool.id ? 0 : -1}
-            onClick={() => setActive(tool.id)}
+            onClick={() => selectTab(index)}
             onKeyDown={(event) => navigate(event, index)}
           >
+            <Icon name={tool.icon} size={16} />
             {tool.label}
           </button>
         ))}
@@ -55,11 +65,12 @@ export default function EditorOptions(props) {
           tabIndex={0}
           aria-labelledby={id + '-tab-' + toolId}
           hidden={active !== toolId}
+          data-entering={(active === toolId && direction !== 0) || undefined}
         >
-          <h2>{label}</h2>
+          <h2 className="sr-only">{label}</h2>
           {active === toolId && <Component {...props} />}{' '}
-          {active === toolId && toolId === 'layout' && props.available.length === 1 && (
-            <p>This is the available layout for your capture count.</p>
+          {active === toolId && toolId === 'layout' && props.available.length === 0 && (
+            <p>No current layouts are available for this photo count.</p>
           )}
         </section>
       ))}

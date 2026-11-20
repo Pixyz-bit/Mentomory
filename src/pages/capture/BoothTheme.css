@@ -145,12 +145,6 @@
 .booth-app .floating-shutter:has(.cancel-countdown) {
   @apply bottom-3;
 }
-.booth-app .floating-shutter:has(.camera-photo-effects) {
-  @apply [width:calc(100%_-_24px)];
-}
-.floating-shutter:has(.camera-photo-effects) .camera-effect-carousel {
-  @apply max-w-[400px];
-}
 @media (max-width: 899px), (max-height: 419px) {
   .booth-app .floating-shutter:has(.camera-effect-carousel) {
     @apply [top:calc(var(--preview-height)_-_7px)];
@@ -433,23 +427,11 @@
   @apply [align-self:center];
   @apply [padding:6px_10px];
 }
-.camera-photo-effects {
-  @apply absolute;
-  @apply [inset:50%_auto_auto_0];
-  translate: 0 -50%;
-  @apply [z-index:13];
-}
-@media (min-width: 900px) and (min-height: 420px) {
-  .camera-photo-effects {
-    @apply inset-auto bottom-[5px] left-0;
-    translate: none;
-  }
-}
-@container camera-preview (max-width: 540px) {
-  .camera-photo-effects {
-    @apply [inset:auto_auto_calc(100%_+_8px)_0];
-    translate: none;
-  }
+.camera-frame-area > .camera-photo-effects {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  z-index: 14;
 }
 .camera-photo-effect-options {
   @apply absolute;
@@ -645,21 +627,32 @@
   }
 }
 .capture-pose-prompt {
-  @apply flex;
-  @apply items-center;
-  @apply gap-[10px];
-  @apply [padding:8px_12px];
-  @apply mb-[8px];
-  @apply [border:1px_solid_var(--ink)];
-  @apply rounded-[8px];
-  @apply [background:var(--paper)];
+  position: absolute;
+  z-index: 15;
+  top: 12px;
+  right: 12px;
+  width: max-content;
+  max-width: min(250px, 58%);
+  padding: 3px 5px 5px;
+  border: 1px solid #ffffff70;
+  border-radius: 8px;
+  background: #111d;
+  color: white;
+  font-size: 12px;
+  line-height: 1.35;
 }
-.capture-pose-prompt span span {
-  @apply block;
-  @apply text-[13px];
+.capture-pose-prompt summary {
+  cursor: pointer;
+  min-height: 28px;
+  padding: 4px 2px;
+  font-weight: 800;
 }
 .capture-pose-prompt img {
-  @apply [flex:none];
-  @apply [object-fit:cover];
-  @apply rounded-[4px];
+  display: block;
+  margin: 0 auto;
+  max-width: 100%;
+  height: auto;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: 4px;
 }

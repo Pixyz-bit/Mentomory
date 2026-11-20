@@ -1,30 +1,19 @@
-import { frameRects, layoutSize } from '../../lib/collage.js';
+import { frameRects, layoutSize, pairLayout } from '../../lib/collage.js';
 const samplePhoto = `${import.meta.env.BASE_URL}landing-contact-sheet.webp`;
 const wideSamplePhoto = `${import.meta.env.BASE_URL}template-wide-original-couple.png`;
 
 export default function TemplateMini({ template, diagram, sampleOffset = 0 }) {
-  const { width, height, padding, footer, gap } = layoutSize(template);
+  const { width, height, padding, footer } = layoutSize(template);
   if (diagram) {
     const paired = diagram === 'paired';
-    const diagramWidth = paired ? 2 * (width - padding) + gap : width;
+    const diagramLayout = paired ? pairLayout(template) : template;
+    const diagramWidth = layoutSize(diagramLayout).width;
     return (
       <svg className="template-mini" viewBox={`0 0 ${diagramWidth} ${height}`} aria-hidden="true">
         <rect width={diagramWidth} height={height} rx="25" fill="currentColor" />
-        {frameRects(template).map((frame, index) => {
-          const x = paired ? 2 * frame.x - padding : frame.x;
-          return (
-            <g key={index}>
-              <rect {...frame} x={x} fill="#eeeeee" />
-              {paired && (
-                <rect
-                  {...frame}
-                  x={x + frame.width + gap}
-                  fill="#d4d4d4"
-                />
-              )}
-            </g>
-          );
-        })}
+        {frameRects(diagramLayout).map((frame, index) => (
+          <rect key={index} {...frame} fill={paired && index % 2 ? '#d4d4d4' : '#eeeeee'} />
+        ))}
         {!paired && (
           <rect
             x={width * 0.35}

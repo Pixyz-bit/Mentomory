@@ -1,12 +1,19 @@
-import { useEffect, useRef, useState, useReducer } from 'react';
+import { useEffect, useMemo, useRef, useState, useReducer } from 'react';
 import { makeEditHistory, editHistoryReducer } from '../lib/edit-history.js';
-import { templates } from '../data/templates.js';
-import { composePhotos, layoutSize } from '../lib/collage.js';
+import { pickerLayouts } from '../data/templates.js';
+import { composePhotos, layoutSize, pairLayout } from '../lib/collage.js';
 import { composeLive } from '../lib/media/live-media.js';
+import { poseImage } from '../data/memePoses.js';
 import posthog, { posthogEnabled } from '../lib/posthog.js';
-export default function useStripEditor({ shots, template, settings, onSettingsChange }) {
+export default function useStripEditor({
+  shots,
+  posePrompts,
+  template,
+  settings,
+  onSettingsChange,
+}) {
   const live = shots[0]?.type === 'live';
-  const compatible = templates.filter((item) => item.count === shots.length);
+  const compatible = pickerLayouts.filter((item) => item.count === shots.length);
   const initialLayout = compatible.some((item) => item.id === settings?.layoutId)
     ? settings.layoutId
     : template.id;
@@ -23,7 +30,15 @@ export default function useStripEditor({ shots, template, settings, onSettingsCh
       settings?.history
     )
   );
-  const { background, layoutId, filter, decoration, caption, frame } = editHistory.present;
+  const { background, filter, decoration, caption, frame } = editHistory.present;
+  const selectedLayout =
+    compatible.find((item) => item.id === editHistory.present.layoutId) ?? template;
+  const layoutId = selectedLayout.id;
+  const meme = !live && posePrompts?.length === shots.length;
+  const layout = useMemo(
+    () => (meme ? pairLayout(selectedLayout) : selectedLayout),
+    [meme, selectedLayout]
+  );
   const patch = (values) => dispatch({ type: 'patch', values });
   const setBackground = (value) => patch({ background: value }),
     setLayoutId = (value) => {
@@ -36,6 +51,7 @@ export default function useStripEditor({ shots, template, settings, onSettingsCh
   const chooseBackground = (value) => patch({ frame: 'none', background: value });
   const [playing, setPlaying] = useState(true);
   const [downloadStatus, setDownloadStatus] = useState('');
+  const downloadTimer = useRef(null);
   const [output, setOutput] = useState(null),
     [busy, setBusy] = useState(true),
     [error, setError] = useState(''),
@@ -47,9 +63,7 @@ export default function useStripEditor({ shots, template, settings, onSettingsCh
     mp4Url = useRef(null),
     abort = useRef(null),
     heading = useRef(null);
-  const layout = templates.find((item) => item.id === layoutId),
-    available = templates.filter((item) => item.count === shots.length),
-    size = layoutSize(layout);
+  const size = layoutSize(layout);
   const options = {
     frame,
     background,
@@ -73,8 +87,11 @@ export default function useStripEditor({ shots, template, settings, onSettingsCh
   }, [editHistory, onSettingsChange]);
   useEffect(() => {
     let cancelled = false;
+    let revealTimeout;
+    const revealAt = performance.now() + 1000;
     setBusy(true);
     setError('');
+    clearTimeout(downloadTimer.current);
     setDownloadStatus('');
     setMp4(null);
     if (mp4Url.current) {
@@ -87,7 +104,9 @@ export default function useStripEditor({ shots, template, settings, onSettingsCh
           ? shots.map((shot) => ({
               url: shot.poster,
             }))
-          : shots;
+          : meme
+            ? shots.flatMap((shot, index) => [shot, { url: poseImage(posePrompts[index]) }])
+            : shots;
         const result = await composePhotos(images, layout, {
           frame,
           background,
@@ -96,11 +115,16 @@ export default function useStripEditor({ shots, template, settings, onSettingsCh
           caption,
         });
         if (cancelled) return;
-        const url = URL.createObjectURL(result.blob);
-        if (currentUrl.current) URL.revokeObjectURL(currentUrl.current);
-        currentUrl.current = url;
-        setOutput(url);
-        setBusy(false);
+        revealTimeout = setTimeout(
+          () => {
+            const url = URL.createObjectURL(result.blob);
+            if (currentUrl.current) URL.revokeObjectURL(currentUrl.current);
+            currentUrl.current = url;
+            setOutput(url);
+            setBusy(false);
+          },
+          Math.max(0, Math.ceil(revealAt - performance.now()))
+        );
       } catch {
         if (!cancelled) {
           setBusy(false);
@@ -111,11 +135,25 @@ export default function useStripEditor({ shots, template, settings, onSettingsCh
     return () => {
       cancelled = true;
       clearTimeout(timeout);
+      clearTimeout(revealTimeout);
     };
-  }, [shots, live, layout, frame, background, filter, decoration, caption, retry]);
+  }, [
+    shots,
+    live,
+    meme,
+    posePrompts,
+    layout,
+    frame,
+    background,
+    filter,
+    decoration,
+    caption,
+    retry,
+  ]);
   useEffect(
     () => () => {
       abort.current?.abort();
+      clearTimeout(downloadTimer.current);
       if (currentUrl.current) URL.revokeObjectURL(currentUrl.current);
       if (mp4Url.current) URL.revokeObjectURL(mp4Url.current);
     },
@@ -175,7 +213,9 @@ export default function useStripEditor({ shots, template, settings, onSettingsCh
           template_id: layout.id,
           media_count: shots.length,
         });
+      clearTimeout(downloadTimer.current);
       setDownloadStatus('Download requested. Check your browser downloads.');
+      downloadTimer.current = setTimeout(() => setDownloadStatus(''), 4500);
     },
     frame,
     setFrame,
@@ -202,7 +242,8 @@ export default function useStripEditor({ shots, template, settings, onSettingsCh
     abort,
     heading,
     layout,
-    available,
+    available: compatible,
+    diagram: meme ? 'paired' : 'classic',
     size,
     options,
     filename,

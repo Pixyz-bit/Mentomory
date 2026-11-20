@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import CaptureActions from './CaptureActions.jsx';
 import Icon from '../common/Icon.jsx';
+import { poseImage } from '../../data/memePoses.js';
 import { LIVE_SECONDS } from '../../lib/media/live-media.js';
 
 const photoEffects = [
@@ -18,6 +19,7 @@ export default function CameraPreview({
   cameraActive,
   retakeIndex,
   previewShot,
+  posePrompt,
   previewNumber,
   onRetakePreview,
   onSavePreview,
@@ -139,6 +141,17 @@ export default function CameraPreview({
               </div>
             )}
           </div>
+          {posePrompt && (
+            <details className="capture-pose-prompt" hidden={!cameraActive || Boolean(previewShot) || countdown !== null} open>
+              <summary>Pose guide</summary>
+              <img
+                src={poseImage(posePrompt)}
+                alt={posePrompt.title}
+                width="104"
+                height="78"
+              />
+            </details>
+          )}
           {previewShot && (
             <div className="absolute inset-0 z-20 overflow-hidden rounded-[var(--radius)] bg-black" aria-label={`Preview ${mode === 'live' ? 'clip' : 'photo'} ${previewNumber}`}>
               {previewShot.type === 'live' ? (
@@ -170,7 +183,29 @@ export default function CameraPreview({
               {backgroundBlur?.status === 'error' ? 'Background blur unavailable. Choose another effect.' : 'Preparing background blur...'}
             </p>
           )}
-          {!previewShot && cameraActive && !completed && settings}
+          {!previewShot && cameraActive && !completed && countdown === null && settings}
+          {!previewShot && !completed && status === 'ready' && countdown === null && setPhotoEffect && (
+            <details className="camera-photo-effects" name="booth-camera-panel">
+              <summary aria-label="Photo effects">
+                <Icon name="effects" size={22} />
+                <span aria-hidden="true">Effects</span>
+              </summary>
+              <div className="camera-photo-effect-options" role="group" aria-label="Photo looks">
+                {photoEffects.map(([label, value]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    aria-pressed={photoEffect === value}
+                    disabled={busy}
+                    onClick={() => setPhotoEffect(value)}
+                  >
+                    <span className="camera-effect-swatch" style={{ filter: value === 'background-blur' ? 'blur(2px)' : value }} aria-hidden="true" />
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </details>
+          )}
           <div className={'camera-feedback' + (hasNotification ? ' has-notification' : '')}>
             {children}
           </div>
@@ -180,28 +215,6 @@ export default function CameraPreview({
               status === 'saving' ||
               countdown !== null) && (
               <div className="floating-shutter">
-                {status === 'ready' && countdown === null && setPhotoEffect && (
-                  <details className="camera-photo-effects" name="booth-camera-panel">
-                    <summary aria-label="Photo effects">
-                      <Icon name="effects" size={22} />
-                      <span aria-hidden="true">Effects</span>
-                    </summary>
-                    <div className="camera-photo-effect-options" role="group" aria-label="Photo looks">
-                      {photoEffects.map(([label, value]) => (
-                        <button
-                          key={value}
-                          type="button"
-                          aria-pressed={photoEffect === value}
-                          disabled={busy}
-                          onClick={() => setPhotoEffect(value)}
-                        >
-                          <span className="camera-effect-swatch" style={{ filter: value === 'background-blur' ? 'blur(2px)' : value }} aria-hidden="true" />
-                          {label}
-                        </button>
-                      ))}
-                    </div>
-                  </details>
-                )}
                 {status === 'recording' && (
                   <div className="recording-status absolute bottom-[18px] left-1/2 min-w-[200px] rounded-[var(--control-radius)] border border-solid border-[color:var(--line)] bg-[var(--paper)] px-3 py-[9px] text-center text-sm text-[color:var(--ink)] [transform:translateX(-50%)]" role="status">
                     <span className="mr-1.5 inline-block size-[7px] rounded-full bg-[var(--ink)]" />

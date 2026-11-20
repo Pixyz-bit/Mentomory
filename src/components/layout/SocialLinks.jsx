@@ -49,7 +49,7 @@ export default function SocialLinks() {
           href={href}
           aria-label={name}
           title={name}
-          className="box-border grid size-11 flex-none place-items-center rounded-[10px] border border-solid border-[#e5e5e5] bg-white text-black! hover:border-black hover:bg-black hover:text-white! [&>svg]:size-5"
+          className="box-border grid size-11 flex-none place-items-center rounded-[10px] border border-solid border-white/30 bg-black text-white! hover:border-white hover:bg-white hover:text-black! [&>svg]:size-5"
         >
           <SocialIcon name={name} />
         </a>

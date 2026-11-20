@@ -1,8 +1,6 @@
-import { useState, useCallback } from 'react';
-import Dialog from './components/common/Dialog.jsx';
+import { useCallback, useEffect, useState } from 'react';
 import { templates } from './data/templates.js';
 import useBoothSession from './hooks/useBoothSession.js';
-import WorkflowSteps from './components/layout/WorkflowSteps.jsx';
 import Footer from './components/layout/Footer.jsx';
 import LandingPage from './pages/landing/LandingPage.jsx';
 import TemplatesPage from './pages/templates/TemplatesPage.jsx';
@@ -14,24 +12,22 @@ import { navigate } from './lib/navigation.js';
 import usePageSeo from './hooks/usePageSeo.js';
 export default function App() {
   const session = useBoothSession();
-  const [resetPending, setResetPending] = useState(false);
-  const [posePrompts, setPosePrompts] = useState([]);
-  function requestReset() {
-    if (session.shots.length || session.editorSettings) setResetPending(true);
-    else session.retake();
-  }
   const {
     page,
     template,
     shots,
     completed,
-    layoutChosen,
     editorSettings,
     setEditorSettings,
     setTemplateId,
     setLayoutChosen,
-    retake,
+    posePrompts,
+    setPosePrompts,
   } = session;
+  const [showHomeIntro, setShowHomeIntro] = useState(() => page === 'home');
+  useEffect(() => {
+    if (page !== 'home') setShowHomeIntro(false);
+  }, [page]);
   usePageSeo(page);
   const updateEditorSettings = useCallback(
     (values) => {
@@ -74,6 +70,7 @@ export default function App() {
   if (page === 'home')
     content = (
       <LandingPage
+        showIntro={showHomeIntro}
         onCapture={() => {
           if (posthogEnabled) posthog.capture('booth_started');
           logPosthogInfo('booth session started', { entry_point: 'landing_page' });
@@ -82,80 +79,27 @@ export default function App() {
       />
     );
   else if (page === 'templates')
-    content = (
-      <TemplatesPage
-        template={template}
-        locked={shots.length > 0}
-        captured={shots.length}
-        onContinue={continueToCapture}
-        onUpload={continueWithUploads}
-        onStartOver={requestReset}
-      />
-    );
+    content = <TemplatesPage onContinue={continueToCapture} onUpload={continueWithUploads} />;
   else if (page === 'editor' && completed)
     content = (
       <EditorPage
         shots={shots}
+        posePrompts={posePrompts}
         template={template}
         settings={editorSettings}
         onSettingsChange={updateEditorSettings}
         onBack={() => {
           location.hash = '/booth';
         }}
-        onStartOver={requestReset}
       />
     );
-  else content = <CapturePage session={{ ...session, retake: requestReset }} posePrompts={posePrompts} />;
+  else content = <CapturePage session={session} posePrompts={posePrompts} />;
   return (
     <div
       className={`app ${page === 'home' ? 'home-app' : page === 'booth' ? 'booth-app' : page === 'templates' ? 'templates-app' : page === 'editor' ? 'editor-app' : ''}`}
     >
-      {page === 'editor' && (
-        <WorkflowSteps page={page} layoutChosen={layoutChosen} completed={completed} />
-      )}
       {content}
-      {(page === 'home' || page === 'editor') && <Footer showHomeContent={page === 'home'} />}
-      {resetPending && (
-        <Dialog
-          title="Start a new session?"
-          onClose={() => setResetPending(false)}
-          initialFocus=".keep-session"
-        >
-          <p>Your photos and edits will be cleared. Download anything you want to keep first.</p>
-          <div className={
-            'dialog-actions [&>.button]:min-h-[50px]! [&>.button]:rounded-[10px]! ' +
-            '[&>.button]:[border:2px_solid_#000]! [&>.button]:[background:#fff]! ' +
-            '[&>.button]:text-black! [&>.button]:px-5! [&>.button]:py-3! ' +
-            '[&>.button]:font-extrabold! [&>.button]:shadow-none! ' +
-            '[&>.button]:transition-[background-color,color]! [&>.button]:duration-[180ms]! ' +
-            '[&>.button]:ease-[var(--ease)]! motion-reduce:[&>.button]:transition-none! ' +
-            '[&>.button:is(:hover,:active):enabled]:[background:#000]! ' +
-            '[&>.button:is(:hover,:active):enabled]:text-white! ' +
-            '[&>.button:is(:hover,:active):enabled]:[transform:none]!'
-          }>
-            <button
-              className="button button-outline keep-session"
-              onClick={() => setResetPending(false)}
-            >
-              Keep my photos
-            </button>
-            <button
-              className="button button-dark"
-              onClick={() => {
-                if (posthogEnabled)
-                  posthog.capture('booth_session_restarted', {
-                    captured_media_count: shots.length,
-                    had_customizations: Boolean(editorSettings),
-                  });
-                setResetPending(false);
-                retake();
-              }}
-            >
-              Start over
-            </button>
-          </div>
-        </Dialog>
-      )}
+      {page === 'home' && <Footer showHomeContent />}
     </div>
   );
 }
