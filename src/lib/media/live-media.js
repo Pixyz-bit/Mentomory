@@ -4,7 +4,7 @@ export const LIVE_SECONDS = 7;
 // Hold each pose long enough for a stepped, scrapbook-style animation.
 export const LIVE_FPS = 4;
 export const motionStyles = {
-  boomerang: { seconds: 1.5, fps: 12, boomerang: true },
+  boomerang: { seconds: 1, fps: 12, boomerang: true },
   live: { seconds: 2, fps: 12 },
 };
 export async function supportsMp4() {

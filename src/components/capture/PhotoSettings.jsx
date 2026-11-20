@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import Chevron from '../common/Chevron.jsx';
 import Icon from '../common/Icon.jsx';
 export default function PhotoSettings({
@@ -11,9 +12,14 @@ export default function PhotoSettings({
   setDelay,
   mode,
   mp4Supported,
+  motionStyle,
+  recordingSeconds,
+  setRecordingSeconds,
+  templateLocked,
   embedded = false,
 }) {
   const Container = embedded ? 'section' : 'details';
+  const [customLength, setCustomLength] = useState(() => ![1, 1.5].includes(recordingSeconds));
   return (
     <Container className="settings-panel shrink-0 overflow-visible" aria-label="Camera settings">
       {embedded ? (
@@ -45,7 +51,9 @@ export default function PhotoSettings({
           </div>
         )}
         {mode === 'live' && mp4Supported === false && (
-          <p className="mb-2 mt-0 text-sm text-[color:var(--muted)]">Video recording is unavailable in this browser.</p>
+          <p className="mb-2 mt-0 text-sm text-[color:var(--muted)]">
+            Video recording is unavailable in this browser.
+          </p>
         )}
         <fieldset className="m-0 min-w-0 border-0 p-0" disabled={busy}>
           <legend className="mb-[9px] flex items-center gap-[7px] p-0 font-bold">
@@ -82,6 +90,43 @@ export default function PhotoSettings({
             <span className="block transition-transform duration-200 ease-[ease]" />
           </button>
         </div>
+        {motionStyle === 'boomerang' && (
+          <fieldset
+            className="boomerang-length m-0 grid min-w-0 gap-2 border-0 p-0"
+            disabled={busy || templateLocked}
+          >
+            <label className="font-bold">
+              Boomerang length
+              <select
+                className="mt-1 block min-h-10 w-full rounded-md border border-solid border-black bg-white px-2"
+                value={customLength ? 'custom' : recordingSeconds}
+                onChange={(event) => {
+                  const custom = event.target.value === 'custom';
+                  setCustomLength(custom);
+                  setRecordingSeconds(custom ? 2 : Number(event.target.value));
+                }}
+              >
+                <option value="1">1 second</option>
+                <option value="1.5">1.5 seconds</option>
+                <option value="custom">Custom</option>
+              </select>
+            </label>
+            {customLength && (
+              <label className="block">
+                Custom length · {recordingSeconds} sec
+                <input
+                  className="block min-h-8 w-full accent-black"
+                  type="range"
+                  min="1"
+                  max="5"
+                  step="0.25"
+                  value={recordingSeconds}
+                  onChange={(event) => setRecordingSeconds(event.target.valueAsNumber)}
+                />
+              </label>
+            )}
+          </fieldset>
+        )}
       </div>
     </Container>
   );

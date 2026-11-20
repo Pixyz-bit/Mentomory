@@ -793,6 +793,33 @@
     inset: calc(100% + 8px) 0 auto auto;
   }
 
+  .booth-app .camera-frame-area > :is(.capture-settings, .camera-photo-effects)
+    > :is(.settings-panel, .camera-photo-effect-options) {
+    width: min(clamp(180px, 58vw, 222px), calc(100cqw - 24px));
+    max-height: min(42dvh, 270px);
+    padding: 8px;
+  }
+
+  .booth-app .capture-settings .session-settings {
+    gap: 8px;
+    font-size: 0.8125rem;
+  }
+
+  .booth-app .camera-photo-effect-options {
+    gap: 4px;
+  }
+
+  .booth-app .camera-photo-effect-options button {
+    min-height: 44px;
+    padding: 4px 2px;
+    font-size: 0.6875rem;
+  }
+
+  .booth-app .camera-photo-effect-options .camera-effect-swatch {
+    width: 23px;
+    height: 23px;
+  }
+
   .booth-app .camera-frame-area > .capture-settings > .settings-panel {
     top: calc(100% + 58px);
   }

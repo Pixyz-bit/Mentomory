@@ -38,7 +38,11 @@ export default function useBoothSession() {
   const [photoEffect, setPhotoEffect] = useState('none');
   const [mode, setMode] = useState('photo');
   const [motionStyle, setMotionStyle] = useState('standard');
-  const motion = motionStyles[motionStyle];
+  const [boomerangSeconds, setBoomerangSeconds] = useState(motionStyles.boomerang.seconds);
+  const motion =
+    motionStyle === 'boomerang'
+      ? { ...motionStyles.boomerang, seconds: boomerangSeconds }
+      : motionStyles[motionStyle];
   const recordingSeconds = motion?.seconds ?? LIVE_SECONDS;
   const [mp4Supported, setMp4Supported] = useState(null);
   const [recordProgress, setRecordProgress] = useState(0);
@@ -78,6 +82,7 @@ export default function useBoothSession() {
         setEditorSettings(null);
         setMode('photo');
         setMotionStyle('standard');
+        setBoomerangSeconds(motionStyles.boomerang.seconds);
         setError('');
         setMirror(true);
         setSelectedDelay(3);
@@ -225,6 +230,17 @@ export default function useBoothSession() {
     motionStyle,
     setMotionStyle,
     recordingSeconds,
+    setRecordingSeconds(seconds) {
+      if (
+        motionStyle === 'boomerang' &&
+        !templateLocked &&
+        seconds >= 1 &&
+        seconds <= 5 &&
+        Number.isInteger(seconds * 4)
+      ) {
+        setBoomerangSeconds(seconds);
+      }
+    },
     mp4Supported,
     recordProgress,
     completed,

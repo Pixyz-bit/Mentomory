@@ -384,6 +384,13 @@ test('capture review offers Continue and Back and countdown offers three fixed p
   for (const label of ['Off', '3 sec', '5 sec'])
     assert.match(settings, new RegExp('>' + label + '<'));
   assert.doesNotMatch(settings, /Custom|type="number"|countdown-value/);
+  assert.doesNotMatch(settings, /Boomerang length/);
+  const boomerangSettings = { motionStyle: 'boomerang', embedded: true, delay: 3 };
+  const presets = render(Settings, { ...boomerangSettings, recordingSeconds: 1 });
+  assert.match(presets, /<option value="1" selected="">1 second<\/option>/);
+  assert.match(presets, /<option value="1\.5">1\.5 seconds<\/option>/);
+  const custom = render(Settings, { ...boomerangSettings, recordingSeconds: 5 });
+  assert.match(custom, /type="range" min="1" max="5" step="0\.25"/);
 });
 
 test('camera gradient follows visible notifications rather than hidden announcements', async () => {
