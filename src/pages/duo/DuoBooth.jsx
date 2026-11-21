@@ -292,11 +292,11 @@ function DuoRoom({ room, onLeave, onContinue }) {
     let refreshRequested = false;
     let centrifuge;
     let live;
-    if (camera && typeof RTCPeerConnection !== 'undefined') {
+    if (typeof RTCPeerConnection !== 'undefined') {
       send('/ice').catch(() => ({})).then(({ iceServers }) => {
         if (signal.aborted) return;
         live = createLivePreview({
-          role, stream: stream.current, iceServers,
+          role, stream: camera ? stream.current : null, iceServers,
           send: (data) => send('/signal', { method: 'POST', data }),
           onStream(seat, remoteStream) {
             if (remoteStream) connected.set(seat, remoteStream);
@@ -440,7 +440,7 @@ function DuoRoom({ room, onLeave, onContinue }) {
 
     let previewTimer;
     async function uploadPreview() {
-      const needsSnapshot = (latestSnapshot?.members || seats).some((seat) => seat !== role && !connected.has(seat));
+      const needsSnapshot = (latestSnapshot?.members || seats).some((seat) => seat !== role && !live?.isConnected(seat));
       try {
         if (needsSnapshot || !cameraAnnounced) {
           const { columns, rows } = boothGrid(seats.length);

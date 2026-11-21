@@ -17,7 +17,7 @@ function gatherIce(connection) {
 }
 
 export function createLivePreview({ role, stream, send, onStream, iceServers = [] }) {
-  if (!stream || typeof RTCPeerConnection === 'undefined') return null;
+  if (typeof RTCPeerConnection === 'undefined') return null;
   const peers = new Map();
   let closed = false;
 
@@ -34,7 +34,7 @@ export function createLivePreview({ role, stream, send, onStream, iceServers = [
     const connection = new RTCPeerConnection({ iceServers: [...stun, ...iceServers] });
     const peer = { connection, toId, id, started: performance.now(), camera: null };
     peers.set(seat, peer);
-    for (const track of stream.getVideoTracks()) {
+    for (const track of stream?.getVideoTracks() || []) {
       track.contentHint = 'motion';
       const sender = connection.addTrack(track, stream);
       const parameters = sender.getParameters();
@@ -71,13 +71,13 @@ export function createLivePreview({ role, stream, send, onStream, iceServers = [
   function update({ seats, peerIds, signals = [], ready }) {
     if (!peerIds || closed) return;
     for (const [seat, peer] of peers) {
-      if (peerIds[seat] !== peer.toId || !ready.includes(seat)) remove(seat);
+      if (peerIds[seat] !== peer.toId || (!stream && !ready.includes(seat))) remove(seat);
     }
-    if (!ready.includes(role)) return;
+    if (stream && !ready.includes(role)) return;
     const position = seats.indexOf(role);
     for (const [index, seat] of seats.entries()) {
       const toId = peerIds[seat];
-      if (index === position || !toId || !ready.includes(seat)) continue;
+      if (index === position || !toId || (!stream && !ready.includes(seat))) continue;
       const outgoing = position < index;
       const signal = signals.find((entry) => entry.from === seat && entry.fromId === toId);
       let peer = peers.get(seat);
@@ -85,6 +85,7 @@ export function createLivePreview({ role, stream, send, onStream, iceServers = [
         if (outgoing) {
           if (!peer || (peer.connection.connectionState !== 'connected' && performance.now() - peer.started >= 10_000)) {
             peer = open(seat, toId, crypto.randomUUID(), seats.length);
+            if (!stream) peer.connection.addTransceiver('video', { direction: 'recvonly' });
             transmit(seat, peer).catch(() => {});
           }
           if (signal?.id === peer.id && signal.description.type === 'answer' && !peer.answered) {
@@ -104,6 +105,9 @@ export function createLivePreview({ role, stream, send, onStream, iceServers = [
 
   return {
     update,
+    isConnected(seat) {
+      return peers.get(seat)?.connection.connectionState === 'connected';
+    },
     async stats() {
       const results = await Promise.allSettled([...peers.entries()].map(async ([seat, { connection }]) => {
         const report = await connection.getStats();
