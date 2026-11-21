@@ -8,6 +8,8 @@ import { pickerLayouts } from '../../data/templates.js';
 import { memePoses } from '../../data/memePoses.js';
 import { boothGrid, defaultSeats, sharedFilters } from '../../lib/shared-booth.js';
 import { createLivePreview } from '../../lib/booth-live-preview.js';
+import useBackgroundBlur from '../../hooks/useBackgroundBlur.js';
+import { useFaceStickers } from '../../hooks/useFaceStickers.js';
 import './DuoBooth.css';
 
 const localRoom = import.meta.env.DEV && !import.meta.env.VITE_PIXBOOTH_API_URL;
@@ -29,7 +31,7 @@ async function request(path, { token, method = 'GET', photo, data, signal } = {}
     ? response.json() : response.blob();
 }
 
-async function capture(video, width, height, quality, limit, filter = 'none') {
+async function capture(video, width, height, quality, limit, { filter = 'none', background, overlay } = {}) {
   if (!video?.videoWidth || video.readyState < 2) return null;
   const canvas = document.createElement('canvas');
   canvas.width = width;
@@ -37,12 +39,17 @@ async function capture(video, width, height, quality, limit, filter = 'none') {
   const ctx = canvas.getContext('2d');
   ctx.filter = filter;
   const ratio = width / height;
-  const sourceWidth = Math.min(video.videoWidth, video.videoHeight * ratio);
-  const sourceHeight = sourceWidth / ratio;
   ctx.translate(width, 0);
   ctx.scale(-1, 1);
-  ctx.drawImage(video, (video.videoWidth - sourceWidth) / 2, (video.videoHeight - sourceHeight) / 2,
-    sourceWidth, sourceHeight, 0, 0, width, canvas.height);
+  function draw(source, w, h) {
+    const sourceWidth = Math.min(w, h * ratio);
+    const sourceHeight = sourceWidth / ratio;
+    ctx.drawImage(source, (w - sourceWidth) / 2, (h - sourceHeight) / 2,
+      sourceWidth, sourceHeight, 0, 0, canvas.width, canvas.height);
+  }
+  if (background) draw(background, background.width, background.height);
+  else draw(video, video.videoWidth, video.videoHeight);
+  if (overlay) draw(overlay, overlay.width, overlay.height);
   for (let jpegQuality = quality; jpegQuality >= .39; jpegQuality -= .12) {
     const image = await new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', jpegQuality));
     if (!image || image.size <= limit) return image;
@@ -188,6 +195,9 @@ function DuoRoom({ room, onLeave, onContinue }) {
   const { role, roomId, memberToken: token } = room;
   const video = useRef(null);
   const stream = useRef(null);
+  const effectTrack = useRef(null);
+  const livePreview = useRef(null);
+  const overlay = useRef(null);
   const cameraRequest = useRef(0);
   const [camera, setCamera] = useState(false);
   const [opening, setOpening] = useState(false);
@@ -203,6 +213,17 @@ function DuoRoom({ room, onLeave, onContinue }) {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [localFilter, setLocalFilter] = useState('none');
+  const [blur, setBlur] = useState(false);
+  const [faceEffect, setFaceEffect] = useState('none');
+  const [effectsBroadcast, setEffectsBroadcast] = useState(true);
+  const backgroundBlur = useBackgroundBlur(video, camera && blur, 640);
+  const face = useFaceStickers(video, overlay, camera, faceEffect, 640);
+  const effects = useRef({});
+  effects.current = {
+    background: blur && backgroundBlur.status === 'ready' ? backgroundBlur.canvas.current : null,
+    overlay: faceEffect !== 'none' ? overlay.current : null,
+  };
+  const effectsActive = camera && (blur || faceEffect !== 'none');
   const filterRef = useRef('none');
   const call = (suffix, options) => request('/' + roomId + suffix, { token, ...options });
   const last = state?.shots.at(-1);
@@ -240,6 +261,57 @@ function DuoRoom({ room, onLeave, onContinue }) {
     cameraRequest.current++;
     stream.current?.getTracks().forEach((track) => track.stop());
   }, []);
+
+  useEffect(() => {
+    if (!effectsActive) return;
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d', { alpha: false });
+    if (!context || !canvas.captureStream) {
+      setEffectsBroadcast(false);
+      return;
+    }
+    setEffectsBroadcast(true);
+    let frame;
+    let renderedAt = -Infinity;
+    let lastVideoTime = -1;
+    const useTrack = (track) => {
+      effectTrack.current = track;
+      livePreview.current?.setVideoTrack(track);
+    };
+    function draw(now) {
+      frame = requestAnimationFrame(draw);
+      const source = video.current;
+      if (!source?.videoWidth || source.readyState < 2 || source.currentTime === lastVideoTime || now - renderedAt < 30) return;
+      renderedAt = now;
+      lastVideoTime = source.currentTime;
+      const scale = Math.min(1, 640 / source.videoWidth, 360 / source.videoHeight);
+      const width = Math.max(1, Math.round(source.videoWidth * scale));
+      const height = Math.max(1, Math.round(source.videoHeight * scale));
+      if (canvas.width !== width || canvas.height !== height) {
+        canvas.width = width;
+        canvas.height = height;
+      }
+      const { background, overlay: accessory } = effects.current;
+      context.drawImage(background || source, 0, 0, width, height);
+      if (accessory) context.drawImage(accessory, 0, 0, width, height);
+      if (!effectTrack.current) {
+        try {
+          const [track] = canvas.captureStream(30).getVideoTracks();
+          useTrack(track);
+        } catch {
+          setEffectsBroadcast(false);
+          cancelAnimationFrame(frame);
+        }
+      }
+    }
+    frame = requestAnimationFrame(draw);
+    return () => {
+      cancelAnimationFrame(frame);
+      const processed = effectTrack.current;
+      useTrack(null);
+      processed?.stop();
+    };
+  }, [effectsActive]);
 
   async function enableCamera() {
     const attempt = ++cameraRequest.current;
@@ -304,6 +376,8 @@ function DuoRoom({ room, onLeave, onContinue }) {
             if (!signal.aborted) setLiveStreams(Object.fromEntries(connected));
           },
         });
+        livePreview.current = live;
+        live?.setVideoTrack(effectTrack.current);
         if (latestSnapshot) live?.update(latestSnapshot);
       });
     }
@@ -368,7 +442,7 @@ function DuoRoom({ room, onLeave, onContinue }) {
         try {
           const { columns, rows } = boothGrid((snapshot.seats || defaultSeats).length);
           const photo = await capture(video.current, 2160 / columns, 1620 / rows, 0.94, 256 * 1024,
-            sharedFilters[filterRef.current][1]);
+            { ...effects.current, filter: sharedFilters[filterRef.current][1] });
           if (!photo) throw new Error();
           await send('/photos/' + index + '/' + role + '?at=' + shot.captureAt, { method: 'PUT', photo });
           refresh();
@@ -444,7 +518,7 @@ function DuoRoom({ room, onLeave, onContinue }) {
       try {
         if (needsSnapshot || !cameraAnnounced) {
           const { columns, rows } = boothGrid(seats.length);
-          const photo = await capture(video.current, 640 / columns, 480 / rows, 0.68, 96 * 1024);
+          const photo = await capture(video.current, 640 / columns, 480 / rows, 0.68, 96 * 1024, effects.current);
           if (photo) await send('/preview', { method: 'PUT', photo });
         }
       } catch {
@@ -482,6 +556,7 @@ function DuoRoom({ room, onLeave, onContinue }) {
     return () => {
       controller.abort();
       live?.close();
+      if (livePreview.current === live) livePreview.current = null;
       centrifuge?.disconnect();
       clearTimeout(refreshTimer);
       clearTimeout(cameraTimer);
@@ -603,6 +678,7 @@ function DuoRoom({ room, onLeave, onContinue }) {
         onBack: leave,
         split: {
           role, remote, liveStreams, seats, localFilter, changeFilter, filters: state.filters || {},
+          blur, setBlur, faceEffect, setFaceEffect, effectsBroadcast,
           videoStats: showVideoStats ? videoStats : null,
           members: state.members || (state.guestJoined ? defaultSeats : ['host']),
         },
@@ -614,6 +690,7 @@ function DuoRoom({ room, onLeave, onContinue }) {
         template, shots: captured, completed, countdown, video, busy: busy || Boolean(waitingForPhotos),
         status: opening ? 'loading' : camera ? 'ready' : 'idle',
         cameraActive: camera, mirror: true, mode: 'photo', sticker: 'none', stickerReady: canStart && !busy,
+        backgroundBlur, overlay, face,
         photoEffect: sharedFilters[localFilter][1],
         openCamera: enableCamera, stopCamera, takePhoto: start, error,
       }}

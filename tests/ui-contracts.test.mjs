@@ -108,7 +108,6 @@ test('capture grid preserves slot order and offers a preview for captured slots 
   assert.doesNotMatch(page, /class="capture-sidebar"/);
   assert.match(page, /<details class="capture-settings" name="booth-camera-panel">/);
   assert.match(page, /Captured photos/);
-  assert.match(actions, /Back to layout/);
   assert.match(page, /<section class="camera-workspace" aria-label="Camera workspace"/);
   assert.doesNotMatch(actions, /aria-label="Take photo"|name="capture-tools"/);
   const camera = page.slice(
@@ -130,7 +129,8 @@ test('capture grid preserves slot order and offers a preview for captured slots 
   assert.doesNotMatch(page, /tool-drawer|Strike a pose/);
   assert.match(actions, /<button[^>]* disabled=""[^>]*><span role="status"[^>]*><span aria-hidden="true">0\/4 captured<\/span>/);
   assert.match(actions, /0 of 4 photos captured/);
-  assert.match(actions, /class="button button-outline capture-back"/);
+  assert.match(page, /<div class="capture-header-actions"><a[^>]*aria-label="Back to layout">Back<\/a>/);
+  assert.doesNotMatch(actions, /Back to layout/);
 });
 test('camera idle offers activation and connecting state avoids duplicate activation', async () => {
   const { default: Preview } = await server.ssrLoadModule(

@@ -76,7 +76,8 @@ export default function TemplatesPage({ onContinue, onUpload, duo = false, setup
   }
 
   function shufflePrompt(index) {
-    const alternatives = memePoses.filter((pose) => pose !== prompts[index]);
+    const alternatives = memePoses.filter((pose) => !prompts.includes(pose));
+    if (!alternatives.length) return;
     const next = alternatives[Math.floor(Math.random() * alternatives.length)];
     setPrompts((current) => current.map((pose, position) => (position === index ? next : pose)));
   }

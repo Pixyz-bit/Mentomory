@@ -19,7 +19,19 @@ function gatherIce(connection) {
 export function createLivePreview({ role, stream, send, onStream, iceServers = [] }) {
   if (typeof RTCPeerConnection === 'undefined') return null;
   const peers = new Map();
+  const cameraTrack = stream?.getVideoTracks()[0];
+  let outgoingTrack = cameraTrack;
   let closed = false;
+
+  async function configureSender(sender, track, size) {
+    const parameters = sender.getParameters();
+    if (!parameters.encodings?.length) return;
+    parameters.degradationPreference = 'maintain-framerate';
+    parameters.encodings[0].maxBitrate = size > 2 ? 400_000 : 900_000;
+    parameters.encodings[0].maxFramerate = Math.min(30, track.getSettings().frameRate || 30);
+    parameters.encodings[0].scaleResolutionDownBy = Math.max(1, (track.getSettings().height || 360) / 360);
+    await sender.setParameters(parameters);
+  }
 
   function remove(seat) {
     const peer = peers.get(seat);
@@ -32,20 +44,12 @@ export function createLivePreview({ role, stream, send, onStream, iceServers = [
   function open(seat, toId, id, size) {
     remove(seat);
     const connection = new RTCPeerConnection({ iceServers: [...stun, ...iceServers] });
-    const peer = { connection, toId, id, started: performance.now(), camera: null };
+    const peer = { connection, toId, id, size, started: performance.now(), camera: null };
     peers.set(seat, peer);
-    for (const track of stream?.getVideoTracks() || []) {
-      track.contentHint = 'motion';
-      const sender = connection.addTrack(track, stream);
-      const parameters = sender.getParameters();
-      if (parameters.encodings?.length) {
-        parameters.degradationPreference = 'maintain-framerate';
-        const targetHeight = 360;
-        parameters.encodings[0].maxBitrate = size > 2 ? 400_000 : 900_000;
-        parameters.encodings[0].maxFramerate = Math.min(30, track.getSettings().frameRate || 30);
-        parameters.encodings[0].scaleResolutionDownBy = Math.max(1, (track.getSettings().height || targetHeight) / targetHeight);
-        sender.setParameters(parameters).catch(() => {});
-      }
+    if (outgoingTrack) {
+      outgoingTrack.contentHint = 'motion';
+      peer.sender = connection.addTrack(outgoingTrack, stream);
+      peer.trackChange = configureSender(peer.sender, outgoingTrack, size).catch(() => {});
     }
     function showCamera() {
       if (peers.get(seat) !== peer || closed) return;
@@ -105,6 +109,20 @@ export function createLivePreview({ role, stream, send, onStream, iceServers = [
 
   return {
     update,
+    setVideoTrack(track) {
+      const next = track || cameraTrack;
+      if (!next || next === outgoingTrack || closed) return;
+      outgoingTrack = next;
+      next.contentHint = 'motion';
+      for (const peer of peers.values()) {
+        if (!peer.sender) continue;
+        peer.trackChange = peer.trackChange.then(async () => {
+          if (peer.connection.signalingState === 'closed' || outgoingTrack !== next) return;
+          await peer.sender.replaceTrack(next);
+          await configureSender(peer.sender, next, peer.size);
+        }).catch(() => {});
+      }
+    },
     isConnected(seat) {
       return peers.get(seat)?.connection.connectionState === 'connected';
     },

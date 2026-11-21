@@ -73,6 +73,10 @@ export async function createStickerRenderer({
     },
     drawTo(ctx, landmarks, width, height, sticker) {
       if (destroyed || sticker === 'none') return;
+      if (sticker === 'rosy-glow') {
+        drawSticker(ctx, landmarks, width, height, sticker);
+        return;
+      }
       const placement = getStickerPlacement(landmarks, width, height);
       if (!placement) return;
       if (!fallback) {

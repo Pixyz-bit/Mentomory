@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import { replaceCapturedShot } from '../src/lib/capture-state.js';
+import { isPortraitEffect } from '../src/lib/face/portrait-effects.js';
 const source = (
   await fs.readFile(new URL('../src/hooks/usePhotoCapture.js', import.meta.url), 'utf8')
 )
@@ -12,6 +13,7 @@ const factory = new Function(
   'useRef',
   'encodeCanvas',
   'drawSticker',
+  'isPortraitEffect',
   'replaceCapturedShot',
   'posthogEnabled',
   'posthog',
@@ -159,6 +161,7 @@ function harness(
     },
     encode,
     () => {},
+    isPortraitEffect,
     replaceCapturedShot,
     false,
     { capture() {} },

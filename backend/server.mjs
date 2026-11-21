@@ -4,7 +4,10 @@ import { createHmac, randomBytes, randomInt } from 'node:crypto';
 const roomLifetime = 5 * 60 * 1000;
 const guestLifetime = 30_000;
 const seats = ['host', 'guest', 'guest2', 'guest3'];
-const sharedFilters = new Set(['none', 'dark', 'black-white', 'vintage', 'vivid', 'soft']);
+const sharedFilters = new Set([
+  'none', 'dark', 'black-white', 'vintage', 'vivid', 'soft',
+  'golden-hour', 'berry-film', 'cool-flash', 'matte-film', 'candy', 'silver',
+]);
 const id = () => randomBytes(24).toString('base64url');
 const fail = (status) => Object.assign(new Error(), { status });
 

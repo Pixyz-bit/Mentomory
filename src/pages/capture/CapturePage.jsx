@@ -52,8 +52,18 @@ export default function CapturePage({ session, posePrompts = [], duo }) {
       <header className="intro capture-intro">
         <Brand />
         <h1 className="sr-only focus:[outline:none]" tabIndex={-1}>Take your photos.</h1>
-        {duo && <div className="duo-header-actions">
-          <button type="button" className="button button-outline" onClick={duo.onBack}>Back</button>
+        <div className="capture-header-actions">
+          {session.retakeIndex != null ? (
+            <button type="button" className="button button-outline" disabled={session.busy} onClick={session.cancelRetake}>
+              Cancel retake
+            </button>
+          ) : previewShot ? (
+            <button type="button" className="button button-outline" disabled={selectedShotIndex == null} onClick={() => setPreviewIndex(null)}>Back</button>
+          ) : duo ? (
+            <button type="button" className="button button-outline" onClick={duo.onBack}>Back</button>
+          ) : (
+            <a className="button button-outline" href="/templates" onClick={navigateLink} aria-label="Back to layout">Back</a>
+          )}
         {canInvite && <details ref={inviteMenu} className="duo-invite" onKeyDown={(event) => {
           if (event.key !== 'Escape' || !event.currentTarget.open) return;
           event.currentTarget.open = false;
@@ -68,7 +78,7 @@ export default function CapturePage({ session, posePrompts = [], duo }) {
             {copyStatus && <p role="status">{copyStatus}</p>}
           </div>
         </details>}
-        </div>}
+        </div>
       </header>
       <section className="camera-workspace" aria-label="Camera workspace">
         <div className="capture-camera">
@@ -103,10 +113,10 @@ export default function CapturePage({ session, posePrompts = [], duo }) {
             {showTrackingNotice && (
               <p className="tracking-note" role="status" aria-live="polite">
                 {session.face.state === 'loading'
-                  ? 'Loading your sticker. Keep facing the camera…'
+                  ? 'Loading your effect. Keep facing the camera…'
                   : session.face.state === 'error'
-                    ? 'Sticker tracking needs attention. Retry in Stickers or select None.'
-                    : 'Face the camera to place your sticker before capturing.'}
+                    ? 'Face tracking needs attention. Retry or select None.'
+                    : 'Face the camera to see your effect before capturing.'}
               </p>
             )}
           </CameraPreview>
@@ -143,15 +153,6 @@ export default function CapturePage({ session, posePrompts = [], duo }) {
                   {session.completed && !hasPendingReview && <Icon name="arrow" />}
                 </button>
               </div>
-              {session.retakeIndex != null ? (
-                <button type="button" className="button button-outline capture-back" disabled={session.busy} onClick={session.cancelRetake}>
-                  Cancel retake
-                </button>
-              ) : previewShot ? (
-                <button type="button" className="button button-outline capture-back" disabled={selectedShotIndex == null} onClick={() => setPreviewIndex(null)}>Back</button>
-              ) : duo ? null : (
-                <a className="button button-outline capture-back" href="/templates" onClick={navigateLink} aria-label="Back to layout">Back</a>
-              )}
             </div>
           </section>
         </div>

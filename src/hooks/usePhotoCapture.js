@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { encodeCanvas } from '../lib/media/live-media.js';
 import { replaceCapturedShot } from '../lib/capture-state.js';
 import { drawSticker } from '../lib/stickers/sticker-art.js';
+import { isPortraitEffect } from '../lib/face/portrait-effects.js';
 import posthog, { posthogEnabled } from '../lib/posthog.js';
 import { logPosthogInfo } from '../lib/posthogLogger.js';
 export default function usePhotoCapture({
@@ -139,7 +140,7 @@ export default function usePhotoCapture({
           }
           ctx.filter = photoEffect === 'background-blur' ? 'none' : photoEffect;
           ctx.drawImage(photoEffect === 'background-blur' ? backgroundBlur.canvas.current : source, 0, 0, canvas.width, canvas.height);
-          ctx.filter = 'none';
+          if (!isPortraitEffect(sticker)) ctx.filter = 'none';
           const result = face.latest.current;
           if (sticker !== 'none' && result && performance.now() - result.timestamp < 600)
             (face.draw || drawSticker)(ctx, result.points, canvas.width, canvas.height, sticker);
@@ -216,7 +217,7 @@ export default function usePhotoCapture({
     }
     ctx.filter = photoEffect === 'background-blur' ? 'none' : photoEffect;
     ctx.drawImage(photoEffect === 'background-blur' ? backgroundBlur.canvas.current : source, 0, 0, canvas.width, canvas.height);
-    ctx.filter = 'none';
+    if (!isPortraitEffect(sticker)) ctx.filter = 'none';
     if (stickerPoints)
       (face.draw || drawSticker)(ctx, stickerPoints, canvas.width, canvas.height, sticker);
     setFlash(true);

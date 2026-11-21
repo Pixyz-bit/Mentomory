@@ -3,7 +3,8 @@ import CaptureActions from './CaptureActions.jsx';
 import Icon from '../common/Icon.jsx';
 import { poseImage } from '../../data/memePoses.js';
 import { LIVE_SECONDS } from '../../lib/media/live-media.js';
-import { boothGrid, sharedFilters } from '../../lib/shared-booth.js';
+import { boothGrid, sharedFaceEffects, sharedFilters } from '../../lib/shared-booth.js';
+import { isPortraitEffect } from '../../lib/face/portrait-effects.js';
 
 const photoEffects = [
   ['Original', 'none'],
@@ -145,10 +146,12 @@ export default function CameraPreview({
               </span>
             ))}
             {roomCode && <span className="duo-room-code">Room <strong>{roomCode}</strong></span>}
-            {photoEffect === 'background-blur' && (
+            {(split?.blur || photoEffect === 'background-blur') && (
               <canvas
                 ref={backgroundBlur?.canvas}
                 className={`absolute inset-0 size-full ${mirror ? '[transform:scaleX(-1)]' : ''} ${backgroundBlur?.status === 'ready' && cameraActive ? '' : 'invisible'}`}
+                data-room-pane={split?.role}
+                style={split ? { ...localPane, filter: photoEffect } : undefined}
                 aria-hidden="true"
               />
             )}
@@ -156,6 +159,9 @@ export default function CameraPreview({
               ref={overlay}
               data-sticker-renderer={face?.rendererMode || 'off'}
               className={`face-overlay pointer-events-none absolute inset-0 ${mirror ? '[transform:scaleX(-1)]' : ''} ${cameraActive ? '' : 'invisible'}`}
+              data-room-pane={split?.role}
+              style={{ ...localPane, filter: split || isPortraitEffect(sticker)
+                ? (photoEffect === 'background-blur' ? 'none' : photoEffect) : undefined }}
               aria-hidden="true"
             />
             {completed &&
@@ -248,11 +254,39 @@ export default function CameraPreview({
           {!previewShot && !completed && status === 'ready' && countdown === null && (split || setPhotoEffect) && (
             <details className={split ? 'camera-photo-effects duo-camera-filters' : 'camera-photo-effects'}
               name="booth-camera-panel" style={localPane}>
-              <summary aria-label={split ? 'Filters' : 'Photo effects'}>
+              <summary aria-label={split ? 'Camera effects' : 'Photo effects'}>
                 <Icon name="effects" size={22} />
-                <span aria-hidden="true">{split ? 'Filters' : 'Effects'}</span>
+                <span aria-hidden="true">Effects</span>
               </summary>
-              <div className="camera-photo-effect-options" role="group" aria-label="Photo looks">
+              <div className="camera-photo-effect-options" role="group" aria-label={split ? 'Camera effects' : 'Photo looks'}>
+                {split && (
+                  <div className="duo-effect-settings">
+                    <label className="duo-effect-toggle">
+                      <input type="checkbox" checked={split.blur} disabled={busy}
+                        onChange={(event) => split.setBlur(event.target.checked)} />
+                      Background blur
+                    </label>
+                    <label className="duo-effect-face">
+                      Face effect
+                      <select value={split.faceEffect} disabled={busy}
+                        onChange={(event) => split.setFaceEffect(event.target.value)}>
+                        {sharedFaceEffects.map(([id, label]) => <option key={id} value={id}>{label}</option>)}
+                      </select>
+                    </label>
+                    {split.faceEffect === 'dog' && face?.state === 'tracking' && <p>Open your mouth for the tongue.</p>}
+                    {(!split.effectsBroadcast || (split.blur && backgroundBlur?.status !== 'ready') ||
+                      (split.faceEffect !== 'none' && face?.state !== 'tracking')) && (
+                      <p role="status">
+                        {!split.effectsBroadcast ? 'This browser only applies these effects to your preview and photos.' :
+                          split.blur && backgroundBlur?.status === 'error' ? 'Background blur is unavailable.' :
+                          split.blur && backgroundBlur?.status !== 'ready' ? 'Preparing background blur…' :
+                          face?.state === 'error' ? 'Face tracking is unavailable.' :
+                          face?.state === 'loading' ? 'Loading face tracking…' : 'Face the camera to see your effect.'}
+                      </p>
+                    )}
+                    <strong>Color looks</strong>
+                  </div>
+                )}
                 {(split ? Object.entries(sharedFilters).map(([id, [label, filter]]) => [label, id, filter]) : photoEffects)
                   .map(([label, value, filter = value]) => (
                   <button

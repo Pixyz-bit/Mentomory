@@ -88,7 +88,43 @@ export function getStickerPlacement(landmarks, width, height) {
 export function drawSticker(ctx, landmarks, width, height, sticker) {
   if (sticker === 'none') return;
   const placement = getStickerPlacement(landmarks, width, height);
-  if (placement) drawStickerArtwork(ctx, placement, sticker, true);
+  if (!placement) return;
+  if (sticker !== 'rosy-glow') {
+    drawStickerArtwork(ctx, placement, sticker, true);
+    return;
+  }
+
+  ctx.save();
+  // Paint in landmark space so the tint follows the face and the open mouth.
+  for (const index of [205, 425]) {
+    const point = landmarks[index];
+    if (!point) continue;
+    const x = point.x * width;
+    const y = point.y * height;
+    const radius = placement.scale * .22;
+    const tint = ctx.createRadialGradient(x, y, 0, x, y, radius);
+    tint.addColorStop(0, 'rgba(217, 96, 123, .25)');
+    tint.addColorStop(.55, 'rgba(217, 96, 123, .10)');
+    tint.addColorStop(1, 'rgba(231, 89, 128, 0)');
+    ctx.fillStyle = tint;
+    ctx.fillRect(x - radius, y - radius, radius * 2, radius * 2);
+  }
+  const lip = [61, 40, 37, 0, 267, 270, 291, 321, 314, 17, 84, 91];
+  const opening = [78, 81, 13, 311, 308, 402, 14, 178];
+  if ([...lip, ...opening].every((index) => landmarks[index])) {
+    ctx.fillStyle = 'rgba(185, 34, 87, .19)';
+    ctx.beginPath();
+    for (const edge of [lip, opening]) {
+      edge.forEach((index, i) => {
+        const point = landmarks[index];
+        if (i === 0) ctx.moveTo(point.x * width, point.y * height);
+        else ctx.lineTo(point.x * width, point.y * height);
+      });
+      ctx.closePath();
+    }
+    ctx.fill('evenodd');
+  }
+  ctx.restore();
 }
 export function drawStickerArtwork(ctx, placement, sticker, transform = false) {
   const { top, nose, mouth } = placement;
@@ -102,6 +138,37 @@ export function drawStickerArtwork(ctx, placement, sticker, transform = false) {
   ctx.lineJoin = 'round';
   ctx.lineCap = 'round';
   ctx.strokeStyle = '#29242b';
+  if (sticker === 'pink-cowboy') {
+      ctx.translate(top.x, top.y);
+      ctx.lineWidth = .027;
+      ctx.strokeStyle = '#6a254e';
+      ctx.fillStyle = '#f19ac8';
+      ctx.beginPath();
+      ctx.moveTo(-.48, -.18);
+      ctx.bezierCurveTo(-.43, -.79, -.32, -.9, -.15, -.81);
+      ctx.quadraticCurveTo(0, -.7, .15, -.81);
+      ctx.bezierCurveTo(.34, -.9, .44, -.72, .47, -.18);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = '#ae3472';
+      ctx.fillRect(-.45, -.34, .9, .14);
+      ctx.fillStyle = '#ffb5db';
+      ctx.beginPath();
+      ctx.moveTo(-.84, -.33);
+      ctx.bezierCurveTo(-1.03, .01, -.53, .2, 0, .14);
+      ctx.bezierCurveTo(.53, .2, 1.03, .01, .84, -.33);
+      ctx.bezierCurveTo(.6, -.13, .29, -.19, 0, -.14);
+      ctx.bezierCurveTo(-.29, -.19, -.6, -.13, -.84, -.33);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = '#fff4fa';
+      ctx.beginPath();
+      ctx.arc(0, -.275, .055, 0, Math.PI * 2);
+      ctx.fill();
+    ctx.restore();
+    return;
+  }
   const ellipse = (x, y, rx, ry, color, rotation = 0) => {
     ctx.fillStyle = color;
     ctx.beginPath();
@@ -382,6 +449,13 @@ export function drawStickerArtwork(ctx, placement, sticker, transform = false) {
     }
     if (['crown', 'tiara'].includes(sticker)) {
       const tiara = sticker === 'tiara';
+      const metal = ctx.createLinearGradient(0, y - .6, .23, y + .12);
+      metal.addColorStop(0, tiara ? '#fff' : '#fff1aa');
+      metal.addColorStop(.48, tiara ? '#c6d1eb' : '#e8b34f');
+      metal.addColorStop(.75, tiara ? '#8996b8' : '#a76424');
+      metal.addColorStop(1, tiara ? '#e1e7f8' : '#f0c266');
+      ctx.strokeStyle = tiara ? '#777f99' : '#8a5b26';
+      ctx.lineWidth = .014;
       polygon(
         [
           [-0.65, y + 0.04],
@@ -392,12 +466,16 @@ export function drawStickerArtwork(ctx, placement, sticker, transform = false) {
           [0.65, y - 0.4],
           [0.65, y + 0.04],
         ],
-        tiara ? '#b7bed2' : '#edbd4c',
+        metal,
         true
       );
-      rect(-0.65, y, 1.3, 0.13, 0.02, tiara ? '#d8ddec' : '#d9a032');
-      for (const x of [-0.36, 0, 0.36])
-        ellipse(x, y - 0.05, 0.06, 0.08, tiara ? '#a6d4e1' : '#ba596b');
+      rect(-.65, y - .004, 1.3, .13, .025, metal, true);
+      line([[-.59, y + .027], [.59, y + .027]], tiara ? '#f4f7ff' : '#fff0aa', .017);
+      for (const x of [-.36, 0, .36]) {
+        ellipse(x, y - .065, .065, .08, tiara ? '#354c7a' : '#743546');
+        ellipse(x, y - .072, .045, .057, tiara ? '#84c6de' : '#cf6c8c');
+        ellipse(x - .016, y - .093, .012, .017, '#fff5e6', -.3);
+      }
     }
     if (['wizard', 'party'].includes(sticker)) {
       const wizard = sticker === 'wizard';

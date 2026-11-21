@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { drawSticker } from '../../lib/stickers/sticker-art.js';
+import { isPortraitEffect } from '../../lib/face/portrait-effects.js';
 export default function StickerThumbnail({ id }) {
   const canvas = useRef(null);
   useEffect(() => {
@@ -7,6 +8,16 @@ export default function StickerThumbnail({ id }) {
     ctx.clearRect(0, 0, 112, 112);
     ctx.strokeStyle = '#b8b8c1';
     ctx.lineWidth = 2;
+    if (id !== 'dog' && isPortraitEffect(id)) {
+      const glow = ctx.createRadialGradient(44, 38, 3, 56, 56, 42);
+      glow.addColorStop(0, '#fff1d8');
+      glow.addColorStop(1, id === 'rosy-glow' ? '#cb627f' : id === 'portrait-studio' ? '#8076ad' : '#b58069');
+      ctx.fillStyle = glow;
+      ctx.beginPath();
+      ctx.arc(56, 56, 41, 0, Math.PI * 2);
+      ctx.fill();
+      return;
+    }
     if (id === 'none') {
       ctx.beginPath();
       ctx.ellipse(56, 61, 21, 28, 0, 0, Math.PI * 2);

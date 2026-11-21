@@ -2,12 +2,20 @@ import { useRef } from 'react';
 import Icon from '../common/Icon.jsx';
 import StickerThumbnail from './StickerThumbnail.jsx';
 import { stickers } from '../../lib/stickers/sticker-art.js';
+import { portraitLooks, isPortraitEffect } from '../../lib/face/portrait-effects.js';
+
+const cameraEffects = [
+  stickers[0],
+  { id: 'dog', name: 'Puppy Lens' },
+  ...portraitLooks.map(([id, name]) => ({ id, name })),
+  ...stickers.slice(1).filter((item) => item.id !== 'dog'),
+];
 
 export default function CameraTools({ session, children }) {
   const { sticker, setSticker, busy, face } = session;
   const touchStart = useRef(null);
-  const selected = Math.max(0, stickers.findIndex((item) => item.id === sticker));
-  const effectAt = (offset) => stickers[(selected + offset + stickers.length) % stickers.length];
+  const selected = Math.max(0, cameraEffects.findIndex((item) => item.id === sticker));
+  const effectAt = (offset) => cameraEffects[(selected + offset + cameraEffects.length) % cameraEffects.length];
 
   function finishSwipe(event) {
     const start = touchStart.current;
@@ -22,7 +30,7 @@ export default function CameraTools({ session, children }) {
 
   function renderEffect(offset) {
     const item = effectAt(offset);
-    const label = item.id === 'none' ? 'No effect' : `${item.name} face sticker`;
+    const label = item.id === 'none' ? 'No effect' : isPortraitEffect(item.id) ? item.name : `${item.name} face sticker`;
     return (
       <div key={offset} className="camera-effect-item">
         <button
