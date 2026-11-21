@@ -251,7 +251,7 @@ function DuoRoom({ room, onLeave, onContinue }) {
           facingMode: 'user',
           width: { ideal: 1920 },
           height: { ideal: 1080 },
-          frameRate: { ideal: 60 },
+          frameRate: { ideal: 30 },
         },
         audio: false,
       });

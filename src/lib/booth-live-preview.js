@@ -40,9 +40,9 @@ export function createLivePreview({ role, stream, send, onStream, iceServers = [
       const parameters = sender.getParameters();
       if (parameters.encodings?.length) {
         parameters.degradationPreference = 'maintain-framerate';
-        const targetHeight = size > 2 ? 360 : 540;
+        const targetHeight = 360;
         parameters.encodings[0].maxBitrate = size > 2 ? 400_000 : 900_000;
-        parameters.encodings[0].maxFramerate = Math.min(60, track.getSettings().frameRate || 60);
+        parameters.encodings[0].maxFramerate = Math.min(30, track.getSettings().frameRate || 30);
         parameters.encodings[0].scaleResolutionDownBy = Math.max(1, (track.getSettings().height || targetHeight) / targetHeight);
         sender.setParameters(parameters).catch(() => {});
       }
@@ -117,9 +117,14 @@ export function createLivePreview({ role, stream, send, onStream, iceServers = [
         const local = report.get(pair?.localCandidateId);
         const remote = report.get(pair?.remoteCandidateId);
         const video = entries.find((entry) => entry.type === 'inbound-rtp' && entry.kind === 'video');
+        const outgoing = entries.find((entry) => entry.type === 'outbound-rtp' && entry.kind === 'video');
+        const source = report.get(outgoing?.mediaSourceId);
         return [seat, {
           mode: local?.candidateType === 'relay' || remote?.candidateType === 'relay' ? 'Relay' : pair ? 'Direct' : 'Live',
           fps: video?.framesPerSecond,
+          captureFps: source?.framesPerSecond,
+          sendFps: outgoing?.framesPerSecond,
+          limitedBy: outgoing?.qualityLimitationReason,
           rtt: typeof pair?.currentRoundTripTime === 'number' ? Math.round(pair.currentRoundTripTime * 1000) : undefined,
         }];
       }));

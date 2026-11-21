@@ -32,7 +32,12 @@ function previewStatus(split, seat) {
   }
   const stats = split.videoStats[seat];
   if (!stats) return '';
-  return [stats.mode, stats.fps ? Math.round(stats.fps) + ' fps' : '', stats.rtt != null ? stats.rtt + ' ms RTT' : '']
+  const direction = seat === split.role ? ' configured fps' : ' decoded fps';
+  return [stats.mode, stats.fps != null ? Math.round(stats.fps) + direction : '',
+    stats.captureFps != null ? 'local capture ' + Math.round(stats.captureFps) + ' fps' : '',
+    stats.sendFps != null ? 'sending to peer ' + Math.round(stats.sendFps) + ' fps' : '',
+    ['bandwidth', 'cpu'].includes(stats.limitedBy) ? 'sender limited by ' + stats.limitedBy : '',
+    stats.rtt != null ? stats.rtt + ' ms RTT' : '']
     .filter(Boolean).join(' · ');
 }
 
