@@ -95,6 +95,50 @@ test('Duo shares filters, lets only the host fire, and closes empty rooms after 
   assert.equal((await call('', 'GET', owner.memberToken)).status, 404);
 });
 
+test('Camera readiness survives expired snapshots and ignores a late heartbeat after stop', async (t) => {
+  const origin = 'https://example.com';
+  let now = 10_000;
+  const server = createBoothServer({ origins: [origin], now: () => now, realtime: async () => ({}) }).listen(0, '127.0.0.1');
+  t.after(() => new Promise((resolve) => server.close(resolve)));
+  await once(server, 'listening');
+  let url = `http://127.0.0.1:${server.address().port}/api/rooms`;
+  const call = (path, method, token, body, type = 'application/json') => fetch(url + path, {
+    method, body, headers: { Origin: origin, ...(token && { Authorization: `Bearer ${token}` }), 'Content-Type': type },
+  });
+  const { roomId, memberToken: host } = await (await call('', 'POST')).json();
+  url += '/' + roomId;
+  const { memberToken: guest } = await (await call('/join', 'POST')).json();
+  const snapshot = async () => (await call('', 'GET', host)).json();
+  const camera = (token, active, version) => call('/camera', 'POST', token, JSON.stringify({ active, version }));
+  const upload = () => call('/preview', 'PUT', guest, Buffer.from([255, 216, 255, 217]), 'image/jpeg');
+
+  assert.equal((await camera(undefined, true, 1)).status, 403);
+  assert.equal((await camera(guest, 'true', 1)).status, 400);
+  assert.equal((await camera(guest, true, 1)).status, 204);
+  assert.equal((await camera(host, true, 1)).status, 204);
+  const firstPeer = (await snapshot()).peerIds.guest;
+  assert.equal((await upload()).status, 204);
+  assert.equal((await call('/preview/guest', 'GET', host)).status, 200);
+
+  now += 6000;
+  assert.deepEqual((await snapshot()).ready, ['host', 'guest']);
+  assert.deepEqual((await snapshot()).previewFrames, {});
+  assert.equal((await call('/preview/guest', 'GET', host)).status, 404);
+  await camera(guest, true, 1);
+  assert.equal((await snapshot()).peerIds.guest, firstPeer);
+
+  await camera(guest, false, 2);
+  await camera(guest, true, 1);
+  await upload();
+  assert.deepEqual((await snapshot()).ready, ['host']);
+  assert.equal((await call('/preview/guest', 'GET', host)).status, 404);
+  await camera(guest, true, 3);
+  assert.notEqual((await snapshot()).peerIds.guest, firstPeer);
+  assert.deepEqual((await snapshot()).ready, ['host', 'guest']);
+  now += 15_001;
+  assert.deepEqual((await snapshot()).ready, []);
+});
+
 test('Trio and Quartet reopen departed seats and keep photos private from replacement guests', async (t) => {
   let now = 10_000;
   const origin = 'https://example.com';

@@ -325,7 +325,7 @@ function DuoRoom({ room, onLeave, onContinue }) {
       if (changed) setRemote({ ...previewUrls });
       if (fetchingPreviews) return;
       const pending = snapshot.ready.filter((seat) => needsPreview(seat) &&
-        (!snapshot.previewFrames || previewFrames[seat] !== snapshot.previewFrames[seat]));
+        (!snapshot.previewFrames || (snapshot.previewFrames[seat] != null && previewFrames[seat] !== snapshot.previewFrames[seat])));
       if (!pending.length) return;
       fetchingPreviews = true;
       try {
@@ -425,19 +425,33 @@ function DuoRoom({ room, onLeave, onContinue }) {
       }
     }
 
+    let cameraTimer;
+    let cameraAnnounced = false;
+    const cameraVersion = cameraRequest.current;
+    async function announceCamera() {
+      try {
+        await send('/camera', { method: 'POST', data: { active: camera, version: cameraVersion } });
+        cameraAnnounced = true;
+      } catch (failure) {
+        if (failure.status === 404) return;
+      }
+      if (camera && !signal.aborted) cameraTimer = setTimeout(announceCamera, 3000);
+    }
+
     let previewTimer;
     async function uploadPreview() {
+      const needsSnapshot = (latestSnapshot?.members || seats).some((seat) => seat !== role && !connected.has(seat));
       try {
-        const { columns, rows } = boothGrid(seats.length);
-        const width = 840 / columns;
-        const photo = await capture(video.current, width, 630 / rows, 0.77, 96 * 1024);
-        if (photo) await send('/preview', { method: 'PUT', photo });
+        if (needsSnapshot || !cameraAnnounced) {
+          const { columns, rows } = boothGrid(seats.length);
+          const photo = await capture(video.current, 640 / columns, 480 / rows, 0.68, 96 * 1024);
+          if (photo) await send('/preview', { method: 'PUT', photo });
+        }
       } catch {
         // The next frame replaces a missed preview.
       } finally {
         if (!signal.aborted) {
-          const everyoneConnected = connected.size === seats.length - 1;
-          previewTimer = setTimeout(uploadPreview, everyoneConnected ? 1800 : seats.length > 2 ? 500 : 320);
+          previewTimer = setTimeout(uploadPreview, needsSnapshot ? (seats.length > 2 ? 500 : 320) : 1800);
         }
       }
     }
@@ -451,6 +465,7 @@ function DuoRoom({ room, onLeave, onContinue }) {
       centrifuge.connect();
     }).catch(() => {});
     refresh();
+    if (camera || cameraVersion) announceCamera();
     if (camera) uploadPreview();
     let statsTimer;
     async function refreshVideoStats() {
@@ -469,6 +484,7 @@ function DuoRoom({ room, onLeave, onContinue }) {
       live?.close();
       centrifuge?.disconnect();
       clearTimeout(refreshTimer);
+      clearTimeout(cameraTimer);
       clearTimeout(previewTimer);
       clearTimeout(statsTimer);
       clearTimeout(shotTimer);

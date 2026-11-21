@@ -80,12 +80,12 @@ export function createBoothServer({ origins, realtime, turn, now = Date.now }) {
         const host = id();
         rooms.set(roomId, {
           host, hostPeer: id(), seats: seats.slice(0, capacity), guests: new Map(), previews: {}, shots: [],
-          signals: {}, filters: {},
+          signals: {}, filters: {}, cameras: {},
           revision: 0, needsReset: false, expiresAt: now() + roomLifetime,
         });
         return send(201, { roomId, memberToken: host, role: 'host' });
       }
-      const route = /^\/api\/rooms\/(\d{10})(?:\/(join|leave|setup|start|token|ice|signal|filter|preview|photos))?(?:\/(?:(\d+)\/)?(host|guest[23]?))?$/.exec(path);
+      const route = /^\/api\/rooms\/(\d{10})(?:\/(join|leave|setup|start|token|ice|signal|filter|camera|preview|photos))?(?:\/(?:(\d+)\/)?(host|guest[23]?))?$/.exec(path);
       if (!route) throw fail(404);
       const [, roomId, action, shotIndex, role] = route;
       if ((action === 'photos') !== (shotIndex !== undefined) || (role && !['preview', 'photos'].includes(action))) {
@@ -98,6 +98,7 @@ export function createBoothServer({ origins, realtime, turn, now = Date.now }) {
       function removeGuest(seat) {
         room.guests.delete(seat);
         delete room.previews[seat];
+        delete room.cameras[seat];
         delete room.filters[seat];
         delete room.signals[seat];
         Object.values(room.signals).forEach((inbox) => delete inbox[seat]);
@@ -143,8 +144,12 @@ export function createBoothServer({ origins, realtime, turn, now = Date.now }) {
 
       const stillMember = () => rooms.get(roomId) === room &&
         (member === 'host' || room.guests.get(member)?.token === credential);
-      const peerId = (seat) => seat === 'host' ? room.hostPeer : room.guests.get(seat)?.peer;
-      const ready = () => Object.keys(room.previews).filter((role) => now() - room.previews[role].at < 5000);
+      const peerId = (seat) => room.cameras[seat]?.peer ?? (seat === 'host' ? room.hostPeer : room.guests.get(seat)?.peer);
+      const hasPreview = (seat) => now() - room.previews[seat]?.at < 5000;
+      const ready = () => room.seats.filter((seat) => {
+        const camera = room.cameras[seat];
+        return camera ? camera.active && now() - camera.at < 15_000 : hasPreview(seat);
+      });
       const image = (photo) => {
         response.writeHead(200, { 'Content-Type': 'image/jpeg' });
         response.end(photo);
@@ -159,7 +164,7 @@ export function createBoothServer({ origins, realtime, turn, now = Date.now }) {
         revision: room.revision,
         setup: room.setup,
         ready: ready(),
-        previewFrames: Object.fromEntries(ready().map((seat) => [seat, room.previews[seat].at])),
+        previewFrames: Object.fromEntries(ready().filter(hasPreview).map((seat) => [seat, room.previews[seat].at])),
         serverTime: now(),
         shots: room.shots.map(({ captureAt, photos }) => ({ captureAt, photos: Object.keys(photos) })),
       });
@@ -220,15 +225,34 @@ export function createBoothServer({ origins, realtime, turn, now = Date.now }) {
       if (request.method === 'POST' && action === 'token') {
         return send(200, await realtime('/token', { channels: [channel], userId: roomId + '-' + member }));
       }
+      if (request.method === 'POST' && action === 'camera') {
+        const body = await readText(request, 128);
+        if (!stillMember()) throw fail(403);
+        let camera;
+        try { camera = JSON.parse(body); } catch { throw fail(400); }
+        const { active, version } = camera || {};
+        if (typeof active !== 'boolean' || !Number.isSafeInteger(version) || version < 0) throw fail(400);
+        const previous = room.cameras[member];
+        if (previous && version <= previous.version) {
+          if (version === previous.version && active === previous.active) previous.at = now();
+          return send(204);
+        }
+        room.cameras[member] = { active, version, at: now(), peer: id() };
+        delete room.signals[member];
+        Object.values(room.signals).forEach((inbox) => delete inbox[member]);
+        if (!active) delete room.previews[member];
+        publish({ type: 'camera' }).catch(() => {});
+        return send(204);
+      }
       if (action === 'preview') {
         if (request.method === 'PUT' && !role) {
           const photo = await readPhoto(request, 96 * 1024);
           if (!stillMember()) throw fail(403);
-          room.previews[member] = { photo, at: now() };
+          if (room.cameras[member]?.active !== false) room.previews[member] = { photo, at: now() };
           return send(204);
         }
         const peer = role ?? (member === 'host' ? 'guest' : 'host');
-        if (request.method === 'GET' && peer !== member && ready().includes(peer)) return image(room.previews[peer].photo);
+        if (request.method === 'GET' && peer !== member && hasPreview(peer) && ready().includes(peer)) return image(room.previews[peer].photo);
         throw fail(404);
       }
       if (request.method === 'POST' && action === 'start') {
