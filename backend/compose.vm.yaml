@@ -1,0 +1,11 @@
+services:
+  pixbooth:
+    build: .
+    restart: unless-stopped
+    mem_limit: 96m
+    env_file: /home/azureuser/apps/pixbooth/backend.env
+    networks:
+      - app_network
+networks:
+  app_network:
+    external: true

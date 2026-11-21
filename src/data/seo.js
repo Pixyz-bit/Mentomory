@@ -22,6 +22,18 @@ const pages = {
     description: 'Capture photos or seven-second live clips in your browser with Mentomory.',
     index: false,
   },
+  play: {
+    path: '/play',
+    title: SITE_TITLE,
+    description: 'Choose between a solo photo booth and a shared duo room.',
+    index: false,
+  },
+  duo: {
+    path: '/duo',
+    title: SITE_TITLE,
+    description: 'Create or join a private two-person photo booth.',
+    index: false,
+  },
   editor: {
     path: '/edit',
     title: SITE_TITLE,

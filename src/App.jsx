@@ -6,6 +6,7 @@ import LandingPage from './pages/landing/LandingPage.jsx';
 import TemplatesPage from './pages/templates/TemplatesPage.jsx';
 import CapturePage from './pages/capture/CapturePage.jsx';
 import EditorPage from './pages/editor/EditorPage.jsx';
+import { BoothMode, DuoBooth } from './pages/duo/DuoBooth.jsx';
 import posthog, { posthogEnabled } from './lib/posthog.js';
 import { logPosthogInfo } from './lib/posthogLogger.js';
 import { navigate } from './lib/navigation.js';
@@ -74,10 +75,12 @@ export default function App() {
         onCapture={() => {
           if (posthogEnabled) posthog.capture('booth_started');
           logPosthogInfo('booth session started', { entry_point: 'landing_page' });
-          navigate('/templates');
+          navigate('/play');
         }}
       />
     );
+  else if (page === 'play') content = <BoothMode />;
+  else if (page === 'duo') content = <DuoBooth />;
   else if (page === 'templates')
     content = <TemplatesPage onContinue={continueToCapture} onUpload={continueWithUploads} />;
   else if (page === 'editor' && completed)

@@ -10,6 +10,8 @@ function readPath() {
 }
 
 function resolvePage(path, completed, layoutChosen) {
+  if (path === '/play') return 'play';
+  if (path === '/duo') return 'duo';
   if (path === '/edit' && completed) return 'editor';
 
   if (['/booth', '/edit'].includes(path) && layoutChosen) {
@@ -54,6 +56,8 @@ export default function useWorkflow({ completed, layoutChosen, onLeaveCapture })
       templates: '/templates',
       booth: '/booth',
       editor: '/edit',
+      play: '/play',
+      duo: '/duo',
     };
 
     const path = paths[next];
