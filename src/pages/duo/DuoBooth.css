@@ -10,9 +10,36 @@
   text-wrap: balance;
 }
 
+.duo-choice-content h1:focus {
+  outline: none;
+}
+
+.templates-app .booth-mode-picker.template-main {
+  width: min(100% - 2rem, 42rem);
+}
+
+.booth-mode-picker .duo-choice-content h1 {
+  margin-bottom: .85rem;
+  font-size: clamp(1.25rem, 4vw, 2rem);
+}
+
+.booth-mode-picker .duo-choice img {
+  max-height: clamp(4rem, calc(50svh - 13rem), 10rem);
+}
+
+.booth-mode-picker .duo-choice-button > span {
+  font-size: clamp(.8rem, 2.8vw, .95rem);
+}
+
+@media (max-height: 680px) {
+  .templates-app .booth-mode-picker .intro {
+    padding-block: .5rem .4rem;
+  }
+}
+
 .duo-choice-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 9rem), 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1rem;
 }
 
@@ -142,10 +169,22 @@
   z-index: 20;
 }
 
-.duo-invite {
+.duo-header-actions {
   position: absolute;
-  inset: 50% 0 auto auto;
+  inset: 50% 0 auto;
   translate: 0 -50%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  pointer-events: none;
+}
+
+.duo-header-actions > * {
+  pointer-events: auto;
+}
+
+.duo-invite {
+  position: relative;
 }
 
 .duo-invite summary {
@@ -153,11 +192,21 @@
   cursor: pointer;
 }
 
-.booth-app .duo-invite .button {
+.booth-app .duo-header-actions .button {
   min-height: 36px;
   padding: .35rem .6rem;
   gap: .35rem;
   font-size: .8rem;
+}
+
+.booth-app .duo-header-actions > .button,
+.booth-app .duo-invite > summary {
+  box-sizing: border-box;
+  inline-size: 8.5rem;
+  min-inline-size: 8.5rem;
+  block-size: 36px;
+  justify-content: center;
+  white-space: nowrap;
 }
 
 .duo-invite summary::-webkit-details-marker {
@@ -186,17 +235,10 @@
 }
 
 @media (max-width: 640px) {
-  .duo-invite {
-    position: relative;
-    inset: auto;
+  .duo-header-actions {
+    position: static;
     translate: none;
-    width: max-content;
-    margin: .4rem auto 0;
-  }
-
-  .duo-invite-actions {
-    inset-inline: 50% auto;
-    translate: -50% 0;
+    margin-top: .4rem;
   }
 
   .duo-pane-label[data-top-right] {
@@ -237,12 +279,40 @@
   padding: .4rem;
 }
 
-.duo-peer img {
+.duo-peer :is(img, video) {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+.duo-live-video {
+  transform: scaleX(-1);
+}
+
+.booth-app .camera-frame-area > .duo-camera-filters {
+  position: static;
+}
+
+.duo-camera-filters > summary,
+.duo-camera-filters > .camera-photo-effect-options {
+  position: absolute;
+  z-index: 16;
+  bottom: auto;
+  translate: 0 -100%;
+}
+
+.duo-camera-filters > summary {
+  top: calc(var(--pane-y) + var(--pane-height) - .65rem);
+  left: calc(var(--pane-x) + .65rem);
+}
+
+.duo-camera-filters > .camera-photo-effect-options {
+  --filter-menu-width: min(270px, calc(100cqw - 24px));
+  top: calc(var(--pane-y) + var(--pane-height) - 4rem);
+  left: clamp(.65rem, calc(var(--pane-x) + .65rem), calc(100% - var(--filter-menu-width) - .65rem));
+  width: var(--filter-menu-width);
 }
 
 .duo-pane-label {

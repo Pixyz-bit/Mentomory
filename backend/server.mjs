@@ -1,9 +1,10 @@
 import { createServer } from 'node:http';
-import { randomBytes, randomInt } from 'node:crypto';
+import { createHmac, randomBytes, randomInt } from 'node:crypto';
 
-const roomLifetime = 15 * 60 * 1000;
+const roomLifetime = 5 * 60 * 1000;
 const guestLifetime = 30_000;
 const seats = ['host', 'guest', 'guest2', 'guest3'];
+const sharedFilters = new Set(['none', 'dark', 'black-white', 'vintage', 'vivid', 'soft']);
 const id = () => randomBytes(24).toString('base64url');
 const fail = (status) => Object.assign(new Error(), { status });
 
@@ -38,7 +39,7 @@ async function readPhoto(request, limit) {
   return photo;
 }
 
-export function createBoothServer({ origins, realtime, now = Date.now }) {
+export function createBoothServer({ origins, realtime, turn, now = Date.now }) {
   const rooms = new Map();
   const sweep = setInterval(() => {
     for (const [key, room] of rooms) {
@@ -78,12 +79,13 @@ export function createBoothServer({ origins, realtime, now = Date.now }) {
         } while (rooms.has(roomId));
         const host = id();
         rooms.set(roomId, {
-          host, seats: seats.slice(0, capacity), guests: new Map(), previews: {}, shots: [],
+          host, hostPeer: id(), seats: seats.slice(0, capacity), guests: new Map(), previews: {}, shots: [],
+          signals: {}, filters: {},
           revision: 0, needsReset: false, expiresAt: now() + roomLifetime,
         });
         return send(201, { roomId, memberToken: host, role: 'host' });
       }
-      const route = /^\/api\/rooms\/(\d{10})(?:\/(join|leave|setup|start|token|preview|photos))?(?:\/(?:(\d+)\/)?(host|guest[23]?))?$/.exec(path);
+      const route = /^\/api\/rooms\/(\d{10})(?:\/(join|leave|setup|start|token|ice|signal|filter|preview|photos))?(?:\/(?:(\d+)\/)?(host|guest[23]?))?$/.exec(path);
       if (!route) throw fail(404);
       const [, roomId, action, shotIndex, role] = route;
       if ((action === 'photos') !== (shotIndex !== undefined) || (role && !['preview', 'photos'].includes(action))) {
@@ -96,6 +98,9 @@ export function createBoothServer({ origins, realtime, now = Date.now }) {
       function removeGuest(seat) {
         room.guests.delete(seat);
         delete room.previews[seat];
+        delete room.filters[seat];
+        delete room.signals[seat];
+        Object.values(room.signals).forEach((inbox) => delete inbox[seat]);
         if (room.shots.length) {
           if (Object.keys(room.shots.at(-1).photos).length < room.seats.length) room.shots.pop();
           room.needsReset = room.shots.length > 0;
@@ -116,7 +121,7 @@ export function createBoothServer({ origins, realtime, now = Date.now }) {
           room.needsReset = false;
         }
         const memberToken = id();
-        room.guests.set(seat, { token: memberToken, lastSeen: now() });
+        room.guests.set(seat, { token: memberToken, peer: id(), lastSeen: now() });
         publish({ type: 'joined' }).catch(() => {});
         return send(201, { memberToken, role: seat });
       }
@@ -138,6 +143,7 @@ export function createBoothServer({ origins, realtime, now = Date.now }) {
 
       const stillMember = () => rooms.get(roomId) === room &&
         (member === 'host' || room.guests.get(member)?.token === credential);
+      const peerId = (seat) => seat === 'host' ? room.hostPeer : room.guests.get(seat)?.peer;
       const ready = () => Object.keys(room.previews).filter((role) => now() - room.previews[role].at < 5000);
       const image = (photo) => {
         response.writeHead(200, { 'Content-Type': 'image/jpeg' });
@@ -147,14 +153,55 @@ export function createBoothServer({ origins, realtime, now = Date.now }) {
         guestJoined: room.guests.size > 0,
         members: ['host', ...room.guests.keys()],
         seats: room.seats,
+        peerIds: Object.fromEntries(room.seats.map((seat) => [seat, peerId(seat)])),
+        signals: Object.values(room.signals[member] || {}),
+        filters: room.filters,
         revision: room.revision,
         setup: room.setup,
         ready: ready(),
+        previewFrames: Object.fromEntries(ready().map((seat) => [seat, room.previews[seat].at])),
         serverTime: now(),
         shots: room.shots.map(({ captureAt, photos }) => ({ captureAt, photos: Object.keys(photos) })),
       });
 
       if (request.method === 'GET' && !action) return send(200, state());
+      if (request.method === 'POST' && action === 'filter') {
+        const body = await readText(request, 128);
+        if (!stillMember()) throw fail(403);
+        let filter;
+        try { filter = JSON.parse(body)?.filter; } catch { throw fail(400); }
+        if (!sharedFilters.has(filter)) throw fail(400);
+        if (room.filters[member] !== filter) {
+          room.filters[member] = filter;
+          publish({ type: 'filter' }).catch(() => {});
+        }
+        return send(204);
+      }
+      if (request.method === 'GET' && action === 'ice') {
+        if (!turn) return send(200, { iceServers: [] });
+        const username = Math.floor(now() / 1000 + 3600) + ':' + peerId(member);
+        const password = createHmac('sha1', turn.secret).update(username).digest('base64');
+        return send(200, { iceServers: [{ urls: turn.urls, username, credential: password }] });
+      }
+      if (request.method === 'POST' && action === 'signal') {
+        const body = await readText(request, 24 * 1024);
+        if (!stillMember()) throw fail(403);
+        let signal;
+        try { signal = JSON.parse(body); } catch { throw fail(400); }
+        const { to, toId, id: offerId, description } = signal || {};
+        if (!room.seats.includes(to) || to === member || !peerId(to) || peerId(to) !== toId ||
+            typeof offerId !== 'string' || !/^[a-z0-9-]{36}$/.test(offerId) ||
+            !['offer', 'answer'].includes(description?.type) || typeof description.sdp !== 'string' ||
+            !description.sdp.startsWith('v=0')) throw fail(400);
+        const inbox = room.signals[to] ??= {};
+        if (inbox[member] && now() - inbox[member].at < 350) throw fail(429);
+        inbox[member] = {
+          from: member, fromId: peerId(member), id: offerId, at: now(),
+          description: { type: description.type, sdp: description.sdp },
+        };
+        publish({ type: 'signal' }).catch(() => {});
+        return send(204);
+      }
       if (request.method === 'POST' && action === 'setup') {
         if (member !== 'host') throw fail(403);
         if (room.shots.length) throw fail(409);
@@ -185,6 +232,7 @@ export function createBoothServer({ origins, realtime, now = Date.now }) {
         throw fail(404);
       }
       if (request.method === 'POST' && action === 'start') {
+        if (member !== 'host') throw fail(403);
         const previous = room.shots.at(-1);
         const incomplete = previous && Object.keys(previous.photos).length !== room.seats.length;
         if (ready().length !== room.seats.length ||

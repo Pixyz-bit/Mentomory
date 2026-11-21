@@ -3,7 +3,7 @@ import { once } from 'node:events';
 import test from 'node:test';
 import { createBoothServer } from '../backend/server.mjs';
 
-test('Duo lets either member fire one shutter and closes empty rooms after 15 minutes', async (t) => {
+test('Duo shares filters, lets only the host fire, and closes empty rooms after five minutes', async (t) => {
   const origin = 'https://example.com';
   let now = 10_000;
   const events = [];
@@ -34,6 +34,27 @@ test('Duo lets either member fire one shutter and closes empty rooms after 15 mi
   assert.equal((await call('/start', 'POST', owner.memberToken)).status, 409);
   const guest = await (await call('/join', 'POST')).json();
   assert.equal((await call('/join', 'POST')).status, 409);
+  const { peerIds } = await (await call('', 'GET', owner.memberToken)).json();
+  const signal = await fetch(base + roomPath + '/signal', {
+    method: 'POST',
+    headers: { Origin: origin, Authorization: 'Bearer ' + owner.memberToken, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      to: guest.role, toId: peerIds[guest.role], id: '12345678-1234-1234-1234-123456789012',
+      description: { type: 'offer', sdp: 'v=0\r\n' },
+    }),
+  });
+  assert.equal(signal.status, 204);
+  assert.deepEqual((await (await call('', 'GET', owner.memberToken)).json()).signals, []);
+  const inbox = (await (await call('', 'GET', guest.memberToken)).json()).signals;
+  assert.equal(inbox[0].from, 'host');
+  assert.equal(inbox[0].description.type, 'offer');
+  const filter = await fetch(base + roomPath + '/filter', {
+    method: 'POST',
+    headers: { Origin: origin, Authorization: 'Bearer ' + guest.memberToken, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ filter: 'black-white' }),
+  });
+  assert.equal(filter.status, 204);
+  assert.equal((await (await call('', 'GET', owner.memberToken)).json()).filters.guest, 'black-white');
   const setup = { layoutId: 'single', count: 1, prompts: [0] };
   const configure = (token, body) => fetch(base + roomPath + '/setup', {
     method: 'POST',
@@ -51,8 +72,9 @@ test('Duo lets either member fire one shutter and closes empty rooms after 15 mi
     assert.equal((await call('/preview', 'PUT', token, jpeg)).status, 204);
   }
 
+  assert.equal((await call('/start', 'POST', guest.memberToken)).status, 403);
   const results = await Promise.all([
-    call('/start', 'POST', guest.memberToken),
+    call('/start', 'POST', owner.memberToken),
     call('/start', 'POST', owner.memberToken),
   ]);
   assert.deepEqual(results.map(({ status }) => status).sort(), [201, 409]);
@@ -64,12 +86,12 @@ test('Duo lets either member fire one shutter and closes empty rooms after 15 mi
   assert.equal((await call('/photos/0/host', 'PUT', guest.memberToken, jpeg)).status, 403);
   assert.equal((await call('/photos/0/host', 'PUT', owner.memberToken, jpeg)).status, 200);
   assert.equal((await call('/photos/0/guest', 'PUT', guest.memberToken, jpeg)).status, 200);
-  assert.equal((await call('/start', 'POST', guest.memberToken)).status, 409);
+  assert.equal((await call('/start', 'POST', owner.memberToken)).status, 409);
   assert.deepEqual(Buffer.from(await (await call('/photos/0/host', 'GET', guest.memberToken)).arrayBuffer()), jpeg);
 
-  now += 14 * 60_000;
+  now += 4 * 60_000;
   assert.equal((await call('', 'GET', owner.memberToken)).status, 200);
-  now += 15 * 60_000;
+  now += 5 * 60_000;
   assert.equal((await call('', 'GET', owner.memberToken)).status, 404);
 });
 
@@ -105,7 +127,7 @@ test('Trio and Quartet reopen departed seats and keep photos private from replac
     assert.equal((await call(path + '/start', 'POST', host.memberToken)).status, 409);
     assert.equal((await call(path + '/preview', 'PUT', guests.at(-1).memberToken, jpeg, 'image/jpeg')).status, 204);
     assert.equal((await call(path + '/preview/' + guests.at(-1).role, 'GET', host.memberToken)).status, 200);
-    const shot = await (await call(path + '/start', 'POST', guests.at(-1).memberToken)).json();
+    const shot = await (await call(path + '/start', 'POST', host.memberToken)).json();
     now = shot.captureAt;
     for (const member of [host, ...guests]) {
       assert.equal((await call(path + '/photos/0/' + member.role + '?at=' + shot.captureAt, 'PUT',

@@ -3,7 +3,7 @@ import CaptureActions from './CaptureActions.jsx';
 import Icon from '../common/Icon.jsx';
 import { poseImage } from '../../data/memePoses.js';
 import { LIVE_SECONDS } from '../../lib/media/live-media.js';
-import { boothGrid } from '../../lib/shared-booth.js';
+import { boothGrid, sharedFilters } from '../../lib/shared-booth.js';
 
 const photoEffects = [
   ['Original', 'none'],
@@ -14,6 +14,16 @@ const photoEffects = [
   ['Background blur', 'background-blur'],
   ['Soft', 'contrast(0.85) brightness(1.1)'],
 ];
+
+function PeerVideo({ stream, label, filter }) {
+  const video = useRef(null);
+  useEffect(() => {
+    const element = video.current;
+    element.srcObject = stream;
+    return () => { element.srcObject = null; };
+  }, [stream]);
+  return <video className="duo-live-video" ref={video} autoPlay muted playsInline aria-label={label} style={{ filter }} />;
+}
 
 export default function CameraPreview({
   status,
@@ -70,7 +80,7 @@ export default function CameraPreview({
     return () => document.removeEventListener('click', dismissOutside, true);
   }, []);
 
-  const shutter = (
+  const shutter = (!split || split.role === 'host') && (
     <CaptureActions
       shared={Boolean(split)}
       {...{ countdown, cancelCountdown, status, stopCamera, completed, stickerReady, takePhoto, mode, sticker, recordingSeconds }}
@@ -88,12 +98,17 @@ export default function CameraPreview({
           openPanel.querySelector('summary').focus();
         }}>
           <div className={`viewfinder relative ${flash ? 'after:pointer-events-none after:absolute after:inset-0 after:bg-white after:content-[""]' : ''}`}>
-            {split?.seats.map((seat, index) => seat !== split.role && (
+            {split?.seats.map((seat, index) => {
+              if (seat === split.role) return null;
+              const filter = sharedFilters[split.filters?.[seat]]?.[1];
+              return (
               <div className="duo-peer" data-room-pane={seat} key={seat} style={paneStyle(index)}>
-                {split.members.includes(seat) && split.remote[seat] ? <img src={split.remote[seat]} alt={`Person ${index + 1} camera preview`} /> :
+                {split.liveStreams[seat] ? <PeerVideo stream={split.liveStreams[seat]} label={`Person ${index + 1} live camera`} filter={filter} /> :
+                  split.members.includes(seat) && split.remote[seat] ? <img src={split.remote[seat]} alt={`Person ${index + 1} camera preview`} style={{ filter }} /> :
                   <span>{split.members.includes(seat) ? 'Camera off' : 'Open seat'}</span>}
               </div>
-            ))}
+              );
+            })}
             <video
               ref={video}
               autoPlay
@@ -213,22 +228,24 @@ export default function CameraPreview({
             </p>
           )}
           {!previewShot && cameraActive && !completed && countdown === null && settings}
-          {!previewShot && !completed && status === 'ready' && countdown === null && setPhotoEffect && (
-            <details className="camera-photo-effects" name="booth-camera-panel">
-              <summary aria-label="Photo effects">
+          {!previewShot && !completed && status === 'ready' && countdown === null && (split || setPhotoEffect) && (
+            <details className={split ? 'camera-photo-effects duo-camera-filters' : 'camera-photo-effects'}
+              name="booth-camera-panel" style={localPane}>
+              <summary aria-label={split ? 'Filters' : 'Photo effects'}>
                 <Icon name="effects" size={22} />
-                <span aria-hidden="true">Effects</span>
+                <span aria-hidden="true">{split ? 'Filters' : 'Effects'}</span>
               </summary>
               <div className="camera-photo-effect-options" role="group" aria-label="Photo looks">
-                {photoEffects.map(([label, value]) => (
+                {(split ? Object.entries(sharedFilters).map(([id, [label, filter]]) => [label, id, filter]) : photoEffects)
+                  .map(([label, value, filter = value]) => (
                   <button
                     key={value}
                     type="button"
-                    aria-pressed={photoEffect === value}
+                    aria-pressed={(split ? split.localFilter : photoEffect) === value}
                     disabled={busy}
-                    onClick={() => setPhotoEffect(value)}
+                    onClick={() => (split ? split.changeFilter(value) : setPhotoEffect(value))}
                   >
-                    <span className="camera-effect-swatch" style={{ filter: value === 'background-blur' ? 'blur(2px)' : value }} aria-hidden="true" />
+                    <span className="camera-effect-swatch" style={{ filter: value === 'background-blur' ? 'blur(2px)' : filter }} aria-hidden="true" />
                     {label}
                   </button>
                 ))}

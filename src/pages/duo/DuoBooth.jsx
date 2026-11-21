@@ -6,7 +6,8 @@ import CapturePage from '../capture/CapturePage.jsx';
 import TemplatesPage from '../templates/TemplatesPage.jsx';
 import { pickerLayouts } from '../../data/templates.js';
 import { memePoses } from '../../data/memePoses.js';
-import { boothGrid, defaultSeats } from '../../lib/shared-booth.js';
+import { boothGrid, defaultSeats, sharedFilters } from '../../lib/shared-booth.js';
+import { createLivePreview } from '../../lib/booth-live-preview.js';
 import './DuoBooth.css';
 
 const localRoom = import.meta.env.DEV && !import.meta.env.VITE_PIXBOOTH_API_URL;
@@ -14,12 +15,12 @@ const api = (import.meta.env.VITE_PIXBOOTH_API_URL ||
   (localRoom ? '/__duo' : 'https://pixbooth-api.chrbuilds.dev')).replace(/\/$/, '');
 const websocket = import.meta.env.VITE_PIXBOOTH_WEBSOCKET_URL || 'wss://realtime.chrbuilds.dev/connection/websocket';
 
-async function request(path, { token, method = 'GET', photo, setup, signal } = {}) {
+async function request(path, { token, method = 'GET', photo, data, signal } = {}) {
   const response = await fetch(api + '/api/rooms' + path, {
-    method, body: setup ? JSON.stringify(setup) : photo, signal: signal || AbortSignal.timeout(6000),
+    method, body: data ? JSON.stringify(data) : photo, signal: signal || AbortSignal.timeout(6000),
     headers: {
       ...(token && { Authorization: 'Bearer ' + token }),
-      ...(setup && { 'Content-Type': 'application/json' }),
+      ...(data && { 'Content-Type': 'application/json' }),
     },
   });
   if (!response.ok) throw Object.assign(new Error('Room request failed'), { status: response.status });
@@ -28,12 +29,13 @@ async function request(path, { token, method = 'GET', photo, setup, signal } = {
     ? response.json() : response.blob();
 }
 
-async function capture(video, width, height, quality, limit) {
+async function capture(video, width, height, quality, limit, filter = 'none') {
   if (!video?.videoWidth || video.readyState < 2) return null;
   const canvas = document.createElement('canvas');
   canvas.width = width;
   canvas.height = height;
   const ctx = canvas.getContext('2d');
+  ctx.filter = filter;
   const ratio = width / height;
   const sourceWidth = Math.min(video.videoWidth, video.videoHeight * ratio);
   const sourceHeight = sourceWidth / ratio;
@@ -56,9 +58,9 @@ function ChoiceContent({ art, title, detail }) {
   </>;
 }
 
-function ChoiceScreen({ title, children }) {
+function ChoiceScreen({ title, children, modePicker = false }) {
   return (
-    <main className="duo-page template-main">
+    <main className={modePicker ? 'duo-page template-main booth-mode-picker' : 'duo-page template-main'}>
       <header className="intro"><Brand /></header>
       <section className="duo-choice-content workflow-step-enter">
         <h1 tabIndex={-1}>{title}</h1>
@@ -87,7 +89,7 @@ function ChoiceCard({ selected, onClick, disabled, children, ...content }) {
 
 export function BoothMode() {
   const [choice, setChoice] = useState(null);
-  return <ChoiceScreen title="Choose how many people are in the booth">
+  return <ChoiceScreen title="Choose how many people are in the booth" modePicker>
     <div className="duo-choice-grid" role="group" aria-label="Booth mode">
       <ChoiceCard art="solo" title="Solo" detail="Take photos on your own."
         selected={choice === 1} onClick={() => setChoice(1)} />
@@ -190,12 +192,15 @@ function DuoRoom({ room, onLeave, onContinue }) {
   const [camera, setCamera] = useState(false);
   const [opening, setOpening] = useState(false);
   const [remote, setRemote] = useState({});
+  const [liveStreams, setLiveStreams] = useState({});
   const [state, setState] = useState(null);
   const [disconnected, setDisconnected] = useState(false);
   const revision = useRef(0);
   const [countdown, setCountdown] = useState(null);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [localFilter, setLocalFilter] = useState('none');
+  const filterRef = useRef('none');
   const call = (suffix, options) => request('/' + roomId + suffix, { token, ...options });
   const last = state?.shots.at(-1);
   const [captured, setCaptured] = useState([]);
@@ -267,6 +272,10 @@ function DuoRoom({ room, onLeave, onContinue }) {
       token, signal: AbortSignal.any([signal, AbortSignal.timeout(5500)]), ...options,
     });
     let previewUrls = {};
+    let previewFrames = {};
+    let latestSnapshot;
+    let fetchingPreviews = false;
+    const connected = new Map();
     let refreshTimer;
     let shotTimer;
     let countdownTimer;
@@ -274,6 +283,62 @@ function DuoRoom({ room, onLeave, onContinue }) {
     let refreshing = false;
     let refreshRequested = false;
     let centrifuge;
+    let live;
+    if (camera && typeof RTCPeerConnection !== 'undefined') {
+      send('/ice').catch(() => ({})).then(({ iceServers }) => {
+        if (signal.aborted) return;
+        live = createLivePreview({
+          role, stream: stream.current, iceServers,
+          send: (data) => send('/signal', { method: 'POST', data }),
+          onStream(seat, remoteStream) {
+            if (remoteStream) connected.set(seat, remoteStream);
+            else connected.delete(seat);
+            if (!signal.aborted) setLiveStreams(Object.fromEntries(connected));
+          },
+        });
+        if (latestSnapshot) live?.update(latestSnapshot);
+      });
+    }
+    setLiveStreams({});
+
+    function needsPreview(seat) {
+      return seat !== role && latestSnapshot?.ready.includes(seat) && !connected.has(seat);
+    }
+
+    async function updatePreviews(snapshot) {
+      let changed = false;
+      for (const seat of Object.keys(previewUrls)) {
+        if (needsPreview(seat)) continue;
+        URL.revokeObjectURL(previewUrls[seat]);
+        delete previewUrls[seat];
+        delete previewFrames[seat];
+        changed = true;
+      }
+      if (changed) setRemote({ ...previewUrls });
+      if (fetchingPreviews) return;
+      const pending = snapshot.ready.filter((seat) => needsPreview(seat) &&
+        (!snapshot.previewFrames || previewFrames[seat] !== snapshot.previewFrames[seat]));
+      if (!pending.length) return;
+      fetchingPreviews = true;
+      try {
+        const photos = await Promise.all(pending.map(async (seat) => [
+          seat, await send(snapshot.seats ? '/preview/' + seat : '/preview').catch(() => null),
+        ]));
+        if (signal.aborted) return;
+        let updated = false;
+        for (const [seat, photo] of photos) {
+          if (!photo || !needsPreview(seat) ||
+              (snapshot.peerIds && snapshot.peerIds[seat] !== latestSnapshot.peerIds?.[seat])) continue;
+          if (previewUrls[seat]) URL.revokeObjectURL(previewUrls[seat]);
+          previewUrls[seat] = URL.createObjectURL(photo);
+          previewFrames[seat] = snapshot.previewFrames?.[seat];
+          updated = true;
+        }
+        if (updated) setRemote({ ...previewUrls });
+      } finally {
+        fetchingPreviews = false;
+      }
+    }
 
     function schedule(snapshot, started) {
       const index = snapshot.shots.length - 1;
@@ -294,7 +359,8 @@ function DuoRoom({ room, onLeave, onContinue }) {
         setCountdown(null);
         try {
           const { columns, rows } = boothGrid((snapshot.seats || defaultSeats).length);
-          const photo = await capture(video.current, 2160 / columns, 1620 / rows, 0.94, 256 * 1024);
+          const photo = await capture(video.current, 2160 / columns, 1620 / rows, 0.94, 256 * 1024,
+            sharedFilters[filterRef.current][1]);
           if (!photo) throw new Error();
           await send('/photos/' + index + '/' + role + '?at=' + shot.captureAt, { method: 'PUT', photo });
           refresh();
@@ -327,15 +393,9 @@ function DuoRoom({ room, onLeave, onContinue }) {
         }
         setState(snapshot);
         schedule(snapshot, started);
-        const previews = await Promise.all(snapshot.ready.filter((peer) => peer !== role).map(async (peer) => {
-          const path = snapshot.seats ? '/preview/' + peer : '/preview';
-          return [peer, await send(path).catch(() => null)];
-        }));
-        if (signal.aborted) return;
-        Object.values(previewUrls).forEach((url) => URL.revokeObjectURL(url));
-        previewUrls = Object.fromEntries(previews.filter(([, photo]) => photo).map(([peer, photo]) =>
-          [peer, URL.createObjectURL(photo)]));
-        setRemote(previewUrls);
+        latestSnapshot = snapshot;
+        live?.update(snapshot);
+        updatePreviews(snapshot).catch(() => {});
       } catch (failure) {
         if (!signal.aborted && [403, 404].includes(failure.status)) {
           controller.abort();
@@ -350,7 +410,8 @@ function DuoRoom({ room, onLeave, onContinue }) {
       } finally {
         refreshing = false;
         if (!signal.aborted) {
-          refreshTimer = setTimeout(refresh, refreshRequested ? 0 : 850);
+          const hasFallback = latestSnapshot?.ready.some(needsPreview);
+          refreshTimer = setTimeout(refresh, refreshRequested ? 0 : hasFallback ? 320 : 850);
           refreshRequested = false;
         }
       }
@@ -366,7 +427,10 @@ function DuoRoom({ room, onLeave, onContinue }) {
       } catch {
         // The next frame replaces a missed preview.
       } finally {
-        if (!signal.aborted) previewTimer = setTimeout(uploadPreview, 700);
+        if (!signal.aborted) {
+          const everyoneConnected = connected.size === seats.length - 1;
+          previewTimer = setTimeout(uploadPreview, everyoneConnected ? 1800 : seats.length > 2 ? 500 : 320);
+        }
       }
     }
 
@@ -382,6 +446,7 @@ function DuoRoom({ room, onLeave, onContinue }) {
     if (camera) uploadPreview();
     return () => {
       controller.abort();
+      live?.close();
       centrifuge?.disconnect();
       clearTimeout(refreshTimer);
       clearTimeout(previewTimer);
@@ -392,6 +457,7 @@ function DuoRoom({ room, onLeave, onContinue }) {
   }, [roomId, token, role, camera, seats.length]);
 
   async function start() {
+    if (role !== 'host') return;
     setBusy(true);
     setError('');
     try {
@@ -403,13 +469,27 @@ function DuoRoom({ room, onLeave, onContinue }) {
     }
   }
 
+  async function changeFilter(filter) {
+    const previous = filterRef.current;
+    filterRef.current = filter;
+    setLocalFilter(filter);
+    try {
+      await call('/filter', { method: 'POST', data: { filter } });
+    } catch {
+      if (filterRef.current !== filter) return;
+      filterRef.current = previous;
+      setLocalFilter(previous);
+      setError('Could not share that filter. Try again.');
+    }
+  }
+
   async function saveSetup(layoutId, posePrompts) {
     setError('');
     try {
       const layout = pickerLayouts.find((item) => item.id === layoutId);
       const updated = await call('/setup', {
         method: 'POST',
-        setup: { layoutId, count: layout.count, prompts: posePrompts.map((pose) => memePoses.indexOf(pose)) },
+        data: { layoutId, count: layout.count, prompts: posePrompts.map((pose) => memePoses.indexOf(pose)) },
       });
       setState(updated);
     } catch {
@@ -485,7 +565,7 @@ function DuoRoom({ room, onLeave, onContinue }) {
         canInvite: role === 'host',
         onBack: leave,
         split: {
-          role, remote, seats,
+          role, remote, liveStreams, seats, localFilter, changeFilter, filters: state.filters || {},
           members: state.members || (state.guestJoined ? defaultSeats : ['host']),
         },
         onContinue: () => onContinue(template.id, captured.map(({ blob, ...shot }) => ({
@@ -496,6 +576,7 @@ function DuoRoom({ room, onLeave, onContinue }) {
         template, shots: captured, completed, countdown, video, busy: busy || Boolean(waitingForPhotos),
         status: opening ? 'loading' : camera ? 'ready' : 'idle',
         cameraActive: camera, mirror: true, mode: 'photo', sticker: 'none', stickerReady: canStart && !busy,
+        photoEffect: sharedFilters[localFilter][1],
         openCamera: enableCamera, stopCamera, takePhoto: start, error,
       }}
     />

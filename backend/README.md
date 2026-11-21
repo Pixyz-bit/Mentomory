@@ -2,7 +2,9 @@
 
 Mentomory starts with Solo, Duo, Trio, or Quartet. Solo opens the style and layout picker. In a shared room, the host uses that same picker and guests receive the chosen layout and pose prompts. A 10-digit code or invite link admits up to the chosen capacity. Any member can start a five-second countdown once every seat has a camera on.
 
-Each browser captures locally at a shared server timestamp. Private JPEG previews refresh about once per second and the higher-resolution shutter captures are composed into a 2160 × 1620 source image per shot. Shared rooms support Classic and Meme still layouts with up to four shots. Camera access requires a secure browser context.
+Each browser captures locally at a shared server timestamp. WebRTC carries video directly between cameras when the network allows it. The room API exchanges private offers and answers. Centrifugo publishes an event prompting browsers to check for signaling and shutter updates. The backend also relays JPEG previews as a fallback. The shutter captures are combined into a 2160 × 1620 source image per shot. Shared rooms support Classic and Meme still layouts with up to four shots. Camera access requires a secure browser context.
+
+The default ICE configuration uses a public STUN server. Networks that block a direct WebRTC connection use the JPEG fallback until a TURN relay is configured.
 
 The backend holds room data and media in memory. Guest seats are freed on leave or after 30 seconds without an authenticated heartbeat. The same room code can admit a replacement guest. Replacing a participant starts a fresh photo set, keeping earlier shots private. Host leave closes the room and otherwise the room expires after 15 minutes without any member activity. Restarts clear rooms. There are no accounts or durable photo storage.
 

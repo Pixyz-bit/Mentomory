@@ -52,6 +52,8 @@ export default function CapturePage({ session, posePrompts = [], duo }) {
       <header className="intro capture-intro">
         <Brand />
         <h1 className="sr-only focus:[outline:none]" tabIndex={-1}>Take your photos.</h1>
+        {duo && <div className="duo-header-actions">
+          <button type="button" className="button button-outline" onClick={duo.onBack}>Back</button>
         {canInvite && <details ref={inviteMenu} className="duo-invite" onKeyDown={(event) => {
           if (event.key !== 'Escape' || !event.currentTarget.open) return;
           event.currentTarget.open = false;
@@ -66,6 +68,7 @@ export default function CapturePage({ session, posePrompts = [], duo }) {
             {copyStatus && <p role="status">{copyStatus}</p>}
           </div>
         </details>}
+        </div>}
       </header>
       <section className="camera-workspace" aria-label="Camera workspace">
         <div className="capture-camera">
@@ -146,9 +149,7 @@ export default function CapturePage({ session, posePrompts = [], duo }) {
                 </button>
               ) : previewShot ? (
                 <button type="button" className="button button-outline capture-back" disabled={selectedShotIndex == null} onClick={() => setPreviewIndex(null)}>Back</button>
-              ) : duo ? (
-                <button type="button" className="button button-outline capture-back" onClick={duo.onBack}>Back</button>
-              ) : (
+              ) : duo ? null : (
                 <a className="button button-outline capture-back" href="/templates" onClick={navigateLink} aria-label="Back to layout">Back</a>
               )}
             </div>

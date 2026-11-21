@@ -1,12 +1,16 @@
 import { createBoothServer } from './server.mjs';
 
 const { REALTIME_API_URL, REALTIME_API_KEY, PIXBOOTH_ORIGINS, PORT = '3000' } = process.env;
+const { PIXBOOTH_TURN_URLS, PIXBOOTH_TURN_SECRET } = process.env;
 if (!REALTIME_API_URL || !REALTIME_API_KEY || !PIXBOOTH_ORIGINS) {
   throw new Error('Set REALTIME_API_URL, REALTIME_API_KEY and PIXBOOTH_ORIGINS');
 }
 
 const server = createBoothServer({
   origins: PIXBOOTH_ORIGINS.split(',').map((origin) => origin.trim()),
+  turn: PIXBOOTH_TURN_URLS && PIXBOOTH_TURN_SECRET ? {
+    urls: PIXBOOTH_TURN_URLS.split(',').map((url) => url.trim()), secret: PIXBOOTH_TURN_SECRET,
+  } : undefined,
   async realtime(path, data) {
     const response = await fetch(new URL(path, REALTIME_API_URL), {
       method: 'POST',
