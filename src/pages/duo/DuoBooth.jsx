@@ -243,9 +243,20 @@ function DuoRoom({ room, onLeave, onContinue }) {
     setOpening(true);
     setError('');
     try {
+      const videoOptions = {
+        facingMode: 'user',
+        width: { ideal: 1920 },
+        height: { ideal: 1080 },
+      };
       const opened = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'user', width: { ideal: 1920 }, height: { ideal: 1080 } },
+        video: { ...videoOptions, frameRate: { min: 27, ideal: 30 } },
         audio: false,
+      }).catch((failure) => {
+        if (failure.name !== 'OverconstrainedError' || attempt !== cameraRequest.current) throw failure;
+        return navigator.mediaDevices.getUserMedia({
+          video: { ...videoOptions, frameRate: { ideal: 30 } },
+          audio: false,
+        });
       });
       if (attempt !== cameraRequest.current || !video.current) {
         opened.getTracks().forEach((track) => track.stop());

@@ -35,12 +35,15 @@ export function createLivePreview({ role, stream, send, onStream, iceServers = [
     const peer = { connection, toId, id, started: performance.now(), camera: null };
     peers.set(seat, peer);
     for (const track of stream.getVideoTracks()) {
+      track.contentHint = 'motion';
       const sender = connection.addTrack(track, stream);
       const parameters = sender.getParameters();
       if (parameters.encodings?.length) {
-        parameters.encodings[0].maxBitrate = size > 2 ? 350_000 : 650_000;
-        parameters.encodings[0].maxFramerate = 24;
-        parameters.encodings[0].scaleResolutionDownBy = Math.max(1, (track.getSettings().height || 480) / 540);
+        parameters.degradationPreference = 'maintain-framerate';
+        const targetHeight = size > 2 ? 360 : 540;
+        parameters.encodings[0].maxBitrate = size > 2 ? 400_000 : 900_000;
+        parameters.encodings[0].maxFramerate = 30;
+        parameters.encodings[0].scaleResolutionDownBy = Math.max(1, (track.getSettings().height || targetHeight) / targetHeight);
         sender.setParameters(parameters).catch(() => {});
       }
     }
