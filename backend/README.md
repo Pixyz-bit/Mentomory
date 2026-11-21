@@ -1,12 +1,14 @@
 # PixBooth Duo backend
 
-Mentomory starts with Solo or Duo. Solo opens the existing style and layout picker. Duo opens Create room and Join room. Rooms use a random 10-digit code and admit two browsers. The creator is on the left. Either member can start a five-second countdown once both cameras are on.
+Mentomory starts with Solo or Duo. Solo opens the style and layout picker. In Duo, the host uses that same picker after creating a room and the guest receives the chosen layout and pose prompts. Rooms use a random 10-digit code and admit two browsers. The shared viewfinder puts the host on the left. Either member can start a five-second countdown once both cameras are on.
 
-Both browsers capture locally at a shared server timestamp. Small private JPEG previews refresh about once per second, and the browsers combine the two full captures into one downloadable photo. Duo supports up to four captures per room and downloads the latest completed pair. Camera access requires a secure browser context.
+Both browsers capture locally at a shared server timestamp. Small private JPEG previews refresh about once per second. Duo supports Classic and Meme still layouts with up to four shots. Each host and guest photo pair becomes one image in the existing editor. Camera access requires a secure browser context.
 
 The backend holds room data and media in memory. Rooms expire after 15 minutes without a request from either authenticated member. An open tab sends a heartbeat while the browser allows it to run. Restarts clear rooms. There are no accounts or durable photo storage.
 
 ## Runtime and VM setup
+
+For local review, run `npm run dev` and open the same localhost URL in two browser tabs. Vite serves an in-memory Duo API and polls for updates. Set `VITE_PIXBOOTH_API_URL` to use another backend.
 
 - Set `REALTIME_API_URL=http://realtime-server:3000` and a server-only `REALTIME_API_KEY` for the `pixbooth` project.
 - Set `PIXBOOTH_ORIGINS=https://mentomory.pixyzbit.dev` to the exact frontend origin. For local testing, also add your localhost origin to this list and the Centrifugo registration.

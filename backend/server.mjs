@@ -66,7 +66,7 @@ export function createBoothServer({ origins, realtime, now = Date.now }) {
         });
         return send(201, { roomId, memberToken: host });
       }
-      const route = /^\/api\/rooms\/(\d{10})(?:\/(join|start|token|preview|photos))?(?:\/(\d+)\/(host|guest))?$/.exec(path);
+      const route = /^\/api\/rooms\/(\d{10})(?:\/(join|setup|start|token|preview|photos))?(?:\/(\d+)\/(host|guest))?$/.exec(path);
       if (!route) throw fail(404);
       const [, roomId, action, shotIndex, role] = route;
       if ((action === 'photos') !== (shotIndex !== undefined)) throw fail(404);
@@ -93,12 +93,34 @@ export function createBoothServer({ origins, realtime, now = Date.now }) {
       };
       const state = () => ({
         guestJoined: Boolean(room.guest),
+        setup: room.setup,
         ready: ready(),
         serverTime: now(),
         shots: room.shots.map(({ captureAt, photos }) => ({ captureAt, photos: Object.keys(photos) })),
       });
 
       if (request.method === 'GET' && !action) return send(200, state());
+      if (request.method === 'POST' && action === 'setup') {
+        if (member !== 'host') throw fail(403);
+        if (room.shots.length) throw fail(409);
+        let body = '';
+        for await (const chunk of request.iterator({ destroyOnReturn: false })) {
+          body += chunk.toString();
+          if (body.length > 1024) {
+            request.resume();
+            throw fail(413);
+          }
+        }
+        let setup;
+        try { setup = JSON.parse(body); } catch { throw fail(400); }
+        if (!setup || typeof setup.layoutId !== 'string' || !/^[a-z0-9-]{1,48}$/.test(setup.layoutId) ||
+            !Number.isInteger(setup.count) || setup.count < 1 || setup.count > 4 ||
+            !Array.isArray(setup.prompts) || ![0, setup.count].includes(setup.prompts.length) ||
+            !setup.prompts.every((index) => Number.isInteger(index) && index >= 0 && index < 256)) throw fail(400);
+        room.setup = { layoutId: setup.layoutId, count: setup.count, prompts: setup.prompts };
+        publish({ type: 'setup' }).catch(() => {});
+        return send(200, state());
+      }
       if (request.method === 'POST' && action === 'token') {
         return send(200, await realtime('/token', { channels: [channel], userId: roomId + '-' + member }));
       }
@@ -114,11 +136,13 @@ export function createBoothServer({ origins, realtime, now = Date.now }) {
       }
       if (request.method === 'POST' && action === 'start') {
         const previous = room.shots.at(-1);
-        if (ready().length !== 2 || room.shots.length >= 4 ||
-            (previous && Object.keys(previous.photos).length !== 2 && now() < previous.captureAt + 12_000)) {
+        const incomplete = previous && Object.keys(previous.photos).length !== 2;
+        if (ready().length !== 2 ||
+            (incomplete ? now() < previous.captureAt + 12_000 : room.shots.length >= (room.setup?.count ?? 4))) {
           throw fail(409);
         }
         const shot = { captureAt: now() + 5000, photos: {} };
+        if (incomplete) room.shots.pop();
         const index = room.shots.push(shot) - 1;
         publish({ type: 'capture', index, captureAt: shot.captureAt }).catch(() => {});
         return send(201, { index, captureAt: shot.captureAt });
@@ -128,7 +152,8 @@ export function createBoothServer({ origins, realtime, now = Date.now }) {
       if (!shot) throw fail(404);
       if (request.method === 'PUT') {
         if (role !== member) throw fail(403);
-        if (now() < shot.captureAt || now() > shot.captureAt + 12_000) throw fail(409);
+        // Clients estimate the server clock from request round trips.
+        if (now() < shot.captureAt - 250 || now() > shot.captureAt + 12_000) throw fail(409);
         const photo = await readPhoto(request, 256 * 1024);
         shot.photos[member] ??= photo;
         publish({ type: 'photo', index: Number(shotIndex), member }).catch(() => {});

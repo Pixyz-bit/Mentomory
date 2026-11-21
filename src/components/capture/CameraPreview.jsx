@@ -48,8 +48,11 @@ export default function CameraPreview({
   settings,
   face,
   hasNotification = false,
+  split,
+  roomCode,
 }) {
   const frame = useRef(null);
+  const localSide = split ? (split.role === 'host' ? 'left' : 'right') : undefined;
   useEffect(() => {
     function dismissOutside(event) {
       const openPanel = frame.current?.querySelector('details[name="booth-camera-panel"][open]');
@@ -61,6 +64,7 @@ export default function CameraPreview({
 
   const shutter = (
     <CaptureActions
+      shared={Boolean(split)}
       {...{ countdown, cancelCountdown, status, stopCamera, completed, stickerReady, takePhoto, mode, sticker, recordingSeconds }}
     />
   );
@@ -76,6 +80,9 @@ export default function CameraPreview({
           openPanel.querySelector('summary').focus();
         }}>
           <div className={`viewfinder relative ${flash ? 'after:pointer-events-none after:absolute after:inset-0 after:bg-white after:content-[""]' : ''}`}>
+            {split && <div className="duo-peer" data-side={split.role === 'host' ? 'right' : 'left'}>
+              {split.remote ? <img src={split.remote} alt="Friend’s camera preview" /> : <span>{split.peerStatus}</span>}
+            </div>}
             <video
               ref={video}
               autoPlay
@@ -84,7 +91,13 @@ export default function CameraPreview({
               className={`absolute inset-0 ${mirror ? '[transform:scaleX(-1)]' : ''} ${cameraActive ? '' : 'invisible'}`}
               style={{ filter: photoEffect === 'background-blur' ? 'none' : photoEffect }}
               aria-label="Live webcam preview"
+              data-duo-side={localSide}
             />
+            {split && <div className="duo-pane-labels" aria-hidden="true">
+              <span>Person 1{split.role === 'host' ? ' · You' : ''}</span>
+              <span>Person 2{split.role === 'guest' ? ' · You' : ''}</span>
+            </div>}
+            {roomCode && <span className="duo-room-code">Room <strong>{roomCode}</strong></span>}
             {photoEffect === 'background-blur' && (
               <canvas
                 ref={backgroundBlur?.canvas}
@@ -118,7 +131,7 @@ export default function CameraPreview({
                 />
               ))}
             {!completed && (status === 'idle' || status === 'loading') && (
-              <div className="camera-placeholder absolute inset-0 flex flex-col items-center justify-center text-center">
+              <div className="camera-placeholder absolute inset-0 flex flex-col items-center justify-center text-center" data-duo-side={localSide}>
                 {status === 'loading' && <h2>Waiting for camera access…</h2>}
                 <button
                   className="button button-dark enable-camera"
@@ -160,10 +173,10 @@ export default function CameraPreview({
                 <img src={previewShot.url} alt={`Captured photo ${previewNumber}`} className="block size-full object-cover object-center" />
               )}
               <div className="pointer-events-none absolute inset-x-0 bottom-3 flex flex-wrap items-center justify-center gap-2 px-3">
-                <button type="button" className="button button-outline pointer-events-auto" disabled={busy} onClick={onRetakePreview}>
+                {onRetakePreview && <button type="button" className="button button-outline pointer-events-auto" disabled={busy} onClick={onRetakePreview}>
                   <Icon name="retake" size={16} />
                   Retake
-                </button>
+                </button>}
                 {onSavePreview && (
                   <button type="button" className="button button-dark pointer-events-auto enabled:bg-black! enabled:text-white!" disabled={busy} onClick={onSavePreview}>
                     <Icon name="check" size={16} />

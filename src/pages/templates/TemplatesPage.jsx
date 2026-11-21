@@ -33,7 +33,10 @@ const pickerTabs = [
 const initialPrompts = (layout) =>
   Array.from({ length: layout.count }, (_, index) => memePoses[index % memePoses.length]);
 
-export default function TemplatesPage({ onContinue, onUpload }) {
+const duoLayouts = pickerLayouts.filter((layout) => layout.count <= 4);
+
+export default function TemplatesPage({ onContinue, onUpload, duo = false, setupError, onBack }) {
+  const layouts = duo ? duoLayouts : pickerLayouts;
   const [preview, setPreview] = useState(defaultLayout);
   const [style, setStyle] = useState('classic');
   const [activeTab, setActiveTab] = useState('style');
@@ -65,7 +68,7 @@ export default function TemplatesPage({ onContinue, onUpload }) {
   const pairedWidth = 2 * (previewSize.width - previewSize.padding) + previewSize.gap;
 
   function openPreview(id) {
-    const layout = pickerLayouts.find((item) => item.id === id);
+    const layout = layouts.find((item) => item.id === id);
     if (layout.id === preview.id) return;
     setPrompts(initialPrompts(layout));
     setPreview(layout);
@@ -282,7 +285,7 @@ export default function TemplatesPage({ onContinue, onUpload }) {
                   <strong>Meme poses</strong>
                   <span>Copy a meme pose.</span>
                 </button>
-                {motionOptions.map((option) => (
+                {!duo && motionOptions.map((option) => (
                   <button
                     type="button"
                     key={option.id}
@@ -316,7 +319,7 @@ export default function TemplatesPage({ onContinue, onUpload }) {
               inert={activeTab !== 'layout'}
             >
               <TemplateCatalog
-                layouts={pickerLayouts}
+                layouts={layouts}
                 showFilters={false}
                 diagram={style === 'meme' ? 'paired' : 'classic'}
                 template={preview}
@@ -324,6 +327,7 @@ export default function TemplatesPage({ onContinue, onUpload }) {
               />
             </div>
           </div>
+          {setupError && <p role="alert">{setupError}</p>}
           <div className="selection-actions">
             {style === 'upload' && (
               <input
@@ -338,6 +342,9 @@ export default function TemplatesPage({ onContinue, onUpload }) {
             {style === 'upload' && !choosingStyle && uploadError && (
               <p role="alert">{uploadError}</p>
             )}
+            <div className="picker-action-row">
+            {onBack && <button type="button" className="button button-outline"
+              onClick={choosingStyle ? onBack : () => setActiveTab('style')}>Back</button>}
             <button
               type="button"
               className="button button-dark layout-preview-confirm"
@@ -357,6 +364,7 @@ export default function TemplatesPage({ onContinue, onUpload }) {
                 <Icon name="shutter" size={24} />
               )}
             </button>
+            </div>
           </div>
         </aside>
       </div>

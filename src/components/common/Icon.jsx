@@ -19,6 +19,9 @@ export default function Icon({ name, size = 20 }) {
   const paths = {
     text: <path d="M4 6V4h12v2m-6-2v12m-3 0h6" />,
     check: <path d="m4 10 4 4 8-8" />,
+    invite: <><circle cx="7.5" cy="6" r="3" /><path d="M2.5 17v-1a5 5 0 0 1 10 0v1m3-11v6m-3-3h6" /></>,
+    copy: <><rect x="6" y="6" width="11" height="11" rx="2" /><path d="M13 3H5a2 2 0 0 0-2 2v8" /></>,
+    link: <path d="m8 12 4-4m-6 2-2 2a3 3 0 0 0 4 4l2-2m0-8 2-2a3 3 0 0 1 4 4l-2 2" />,
     expand: <path d="M3 8V3h5m4 0h5v5m0 4v5h-5m-4 0H3v-5" />,
     effects: (
       <>

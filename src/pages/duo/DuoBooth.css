@@ -1,66 +1,250 @@
-.duo-page {
-  width: min(100% - 2rem, 57rem);
-  margin: 2rem auto;
+.templates-app .duo-page.template-main {
+  width: min(100% - 2rem, 50rem);
 }
 
-.duo-page h1 {
-  margin: 1rem 0;
+.duo-choice-content h1 {
+  margin: 0 auto 1.25rem;
+  font-size: clamp(1.55rem, 5vw, 2.25rem);
+  line-height: 1.15;
+  text-align: center;
+  text-wrap: balance;
 }
 
-.duo-actions,
-.duo-room-bar {
+.duo-choice-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 9rem), 1fr));
+  gap: 1rem;
+}
+
+.duo-choice {
+  position: relative;
+  border: 2px solid #111;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.duo-choice-button {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  align-items: stretch;
+  padding: .65rem;
+  gap: .35rem;
+  border: 0;
+  border-radius: inherit;
+  background: transparent;
+  color: #111;
+  font: inherit;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.duo-choice:hover {
+  background: #fafafa;
+}
+
+.duo-choice[data-selected='true'] {
+  background: #f5f5f5;
+  box-shadow: 3px 3px 0 #111;
+}
+
+.duo-choice img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 3 / 2;
+  object-fit: cover;
+  border-radius: 5px;
+}
+
+.duo-choice strong {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 1.1rem;
+}
+
+.duo-choice span {
+  color: #52525b;
+}
+
+.duo-choice-actions {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: .75rem;
+  gap: .5rem;
 }
 
-.duo-actions label {
+.duo-choice .duo-choice-check {
+  position: absolute;
+  inset: 1rem 1rem auto auto;
+  display: grid;
+  place-items: center;
+  width: 1.6rem;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: #111;
+  color: #fff;
+}
+
+.duo-choice-actions {
+  justify-content: flex-end;
+  margin-top: 1rem;
+}
+
+.templates-app .duo-choice-actions .button-dark:not(:disabled) {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.templates-app .duo-choice-actions .button:disabled {
+  border: 2px dashed var(--muted);
+  background: var(--surface);
+  color: var(--muted);
+  opacity: 1;
+}
+
+.duo-room-field {
+  padding: .35rem .65rem .75rem;
+}
+
+.duo-room-field label {
   display: block;
-  margin-bottom: .25rem;
+  margin-bottom: .35rem;
+  font-weight: 700;
 }
 
-.duo-actions input {
+.duo-room-field input {
   padding: .65rem;
   width: 10em;
+  max-width: 100%;
   font: inherit;
-  border: 1px solid var(--line);
+  border: 1px solid #111;
   border-radius: .5rem;
 }
 
-.duo-room-bar {
-  margin-block: 1rem;
-}
-
-.duo-room-bar strong {
+.duo-room-code {
+  position: absolute;
+  inset: .65rem .65rem auto auto;
+  z-index: 3;
+  padding: .3rem .5rem;
+  border-radius: .35rem;
+  background: #111;
+  color: white;
+  font-size: .75rem;
   font-variant-numeric: tabular-nums;
+  user-select: text;
 }
 
-.duo-view {
+.duo-capture-app .capture-intro {
   position: relative;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  width: min(100%, 44rem);
-  margin-inline: auto;
-  overflow: hidden;
-  border: 2px solid #222;
-  border-radius: .9rem;
-  background: #252527;
+  z-index: 20;
+}
+
+.duo-invite {
+  position: absolute;
+  inset: 50% 0 auto auto;
+  translate: 0 -50%;
+}
+
+.duo-invite summary {
+  list-style: none;
+  cursor: pointer;
+}
+
+.booth-app .duo-invite .button {
+  min-height: 36px;
+  padding: .35rem .6rem;
+  gap: .35rem;
+  font-size: .8rem;
+}
+
+.duo-invite summary::-webkit-details-marker {
+  display: none;
+}
+
+.duo-invite-actions {
+  position: absolute;
+  inset: calc(100% + .4rem) 0 auto auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: .4rem;
+  width: max-content;
+  max-width: min(18rem, 85vw);
+  padding: .5rem;
+  border: 1px solid #111;
+  border-radius: .6rem;
+  background: white;
+}
+
+.duo-invite-actions p {
+  width: 100%;
+  margin: 0;
+  font-size: .85rem;
+  text-align: left;
+}
+
+@media (max-width: 640px) {
+  .duo-invite {
+    position: relative;
+    inset: auto;
+    translate: none;
+    width: max-content;
+    margin: .4rem auto 0;
+  }
+
+  .duo-invite-actions {
+    inset-inline: 50% auto;
+    translate: -50% 0;
+  }
+
+  .duo-pane-labels span + span {
+    padding-top: 2.7rem;
+  }
+}
+
+.duo-capture-app {
+  max-width: none;
+  padding-inline: 0;
+}
+
+.booth-app .viewfinder video[data-duo-side],
+.booth-app .viewfinder .camera-placeholder[data-duo-side],
+.duo-peer {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 50%;
+  height: 100%;
+}
+
+.booth-app .viewfinder video[data-duo-side='right'],
+.booth-app .viewfinder .camera-placeholder[data-duo-side='right'],
+.duo-peer[data-side='right'] {
+  inset-inline-start: 50%;
+}
+
+.booth-app .viewfinder .camera-placeholder[data-duo-side] {
+  padding: .35rem;
+  background: #292929;
   color: white;
 }
 
-.duo-pane {
-  position: relative;
+.booth-app .camera-placeholder[data-duo-side] .enable-camera {
+  max-width: 100%;
+  min-width: 0;
+}
+
+.duo-peer {
   display: grid;
   place-items: center;
-  aspect-ratio: 2 / 3;
+  overflow: hidden;
+  color: white;
+  background: #292929;
+  text-align: center;
 }
 
-.duo-pane + .duo-pane {
-  border-inline-start: 2px solid white;
-}
-
-.duo-pane :is(video, img) {
+.duo-peer img {
   position: absolute;
   inset: 0;
   width: 100%;
@@ -68,40 +252,22 @@
   object-fit: cover;
 }
 
-.duo-pane video {
-  transform: scaleX(-1);
-}
-
-.duo-person {
+.duo-pane-labels {
   position: absolute;
-  inset: .6rem auto auto .6rem;
-  padding: .3rem .55rem;
-  background: #111e;
-  border-radius: .4rem;
-  font-size: .85rem;
+  inset: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  pointer-events: none;
+  z-index: 2;
 }
 
-.duo-empty {
-  padding: .75rem;
-  text-align: center;
+.duo-pane-labels span {
+  padding: .65rem;
+  color: #fff;
+  font-weight: 700;
+  text-shadow: 0 1px 4px black;
 }
 
-.duo-countdown {
-  position: absolute;
-  inset: 50% auto auto 50%;
-  transform: translate(-50%, -50%);
-  padding: .1em .45em;
-  border-radius: .2em;
-  font-size: clamp(2.75rem, 12vw, 6rem);
-  font-weight: 800;
-  background: #111e;
-}
-
-.duo-controls {
-  justify-content: center;
-  margin-top: 1rem;
-}
-
-.duo-page p {
-  text-align: center;
+.duo-pane-labels span + span {
+  border-left: 2px solid white;
 }

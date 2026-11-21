@@ -58,9 +58,9 @@ export default function App() {
     setLayoutChosen(true);
     navigate('/booth');
   }
-  function continueWithUploads(id, uploadedShots) {
+  function continueWithUploads(id, uploadedShots, prompts = []) {
     selectTemplate(id);
-    setPosePrompts([]);
+    setPosePrompts(prompts);
     session.setMode('photo');
     session.setMotionStyle('standard');
     session.acceptUploadedShots(uploadedShots);
@@ -80,9 +80,9 @@ export default function App() {
       />
     );
   else if (page === 'play') content = <BoothMode />;
-  else if (page === 'duo') content = <DuoBooth />;
+  else if (page === 'duo') content = <DuoBooth onContinue={continueWithUploads} />;
   else if (page === 'templates')
-    content = <TemplatesPage onContinue={continueToCapture} onUpload={continueWithUploads} />;
+    content = <TemplatesPage onContinue={continueToCapture} onUpload={continueWithUploads} onBack={() => navigate('/play')} />;
   else if (page === 'editor' && completed)
     content = (
       <EditorPage
@@ -99,7 +99,7 @@ export default function App() {
   else content = <CapturePage session={session} posePrompts={posePrompts} />;
   return (
     <div
-      className={`app ${page === 'home' ? 'home-app' : page === 'booth' ? 'booth-app' : page === 'templates' ? 'templates-app' : page === 'editor' ? 'editor-app' : ''}`}
+      className={`app ${page === 'home' ? 'home-app' : page === 'booth' ? 'booth-app' : ['templates', 'play', 'duo'].includes(page) ? 'templates-app' : page === 'editor' ? 'editor-app' : ''}`}
     >
       {content}
       {page === 'home' && <Footer showHomeContent />}

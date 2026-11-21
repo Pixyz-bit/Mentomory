@@ -34,6 +34,16 @@ test('Duo lets either member fire one shutter and closes empty rooms after 15 mi
   assert.equal((await call('/start', 'POST', owner.memberToken)).status, 409);
   const guest = await (await call('/join', 'POST')).json();
   assert.equal((await call('/join', 'POST')).status, 409);
+  const setup = { layoutId: 'single', count: 1, prompts: [0] };
+  const configure = (token, body) => fetch(base + roomPath + '/setup', {
+    method: 'POST',
+    body: JSON.stringify(body),
+    headers: { Origin: origin, Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
+  });
+  assert.equal((await configure(guest.memberToken, setup)).status, 403);
+  assert.equal((await configure(owner.memberToken, { ...setup, count: 5 })).status, 400);
+  assert.equal((await configure(owner.memberToken, setup)).status, 200);
+  assert.deepEqual((await (await call('', 'GET', guest.memberToken)).json()).setup, setup);
   assert.equal((await call('/token', 'POST', guest.memberToken)).status, 200);
   assert.deepEqual(events.find(([path]) => path === '/token')[1].channels, ['pixbooth/room/' + owner.roomId]);
 
@@ -54,6 +64,7 @@ test('Duo lets either member fire one shutter and closes empty rooms after 15 mi
   assert.equal((await call('/photos/0/host', 'PUT', guest.memberToken, jpeg)).status, 403);
   assert.equal((await call('/photos/0/host', 'PUT', owner.memberToken, jpeg)).status, 200);
   assert.equal((await call('/photos/0/guest', 'PUT', guest.memberToken, jpeg)).status, 200);
+  assert.equal((await call('/start', 'POST', guest.memberToken)).status, 409);
   assert.deepEqual(Buffer.from(await (await call('/photos/0/host', 'GET', guest.memberToken)).arrayBuffer()), jpeg);
 
   now += 14 * 60_000;

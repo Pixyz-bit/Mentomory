@@ -582,6 +582,21 @@ html:has(.templates-app)::-webkit-scrollbar-thumb,
 .templates-app .layout-picker-options .selection-actions {
   @apply mt-[14px];
 }
+.picker-action-row {
+  display: grid;
+  flex: 1 1 100%;
+  width: 100%;
+  min-width: 0;
+  gap: .5rem;
+}
+.picker-action-row:has(> .button-outline) {
+  grid-template-columns: auto minmax(0, 1fr);
+}
+.templates-app .selection-actions .picker-action-row .layout-preview-confirm {
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+}
 .templates-app .selection-actions .layout-preview-confirm {
   @apply w-[100%];
   @apply [background:var(--ink)];

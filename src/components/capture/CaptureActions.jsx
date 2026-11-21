@@ -11,9 +11,10 @@ export default function CaptureActions({
   mode,
   sticker = 'none',
   recordingSeconds = 7,
+  shared = false,
 }) {
   if (countdown !== null)
-    return (
+    return shared ? null : (
       <button className="button button-outline cancel-capture cancel-countdown" onClick={cancelCountdown}>
         Cancel countdown
       </button>

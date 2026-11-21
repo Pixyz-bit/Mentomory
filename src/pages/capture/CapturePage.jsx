@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import CameraTools from '../../components/capture/CameraTools.jsx';
 import CameraPreview from '../../components/capture/CameraPreview.jsx';
 import CapturedGallery from '../../components/capture/CapturedGallery.jsx';
@@ -8,10 +8,22 @@ import Icon from '../../components/common/Icon.jsx';
 import Brand from '../../components/common/Brand.jsx';
 import posthog, { posthogEnabled } from '../../lib/posthog.js';
 import { navigate, navigateLink } from '../../lib/navigation.js';
-export default function CapturePage({ session, posePrompts = [] }) {
+export default function CapturePage({ session, posePrompts = [], duo }) {
   const showTrackingNotice =
     session.sticker !== 'none' && session.cameraActive && !session.stickerReady;
   const [selectedShotIndex, setPreviewIndex] = useState(null);
+  const [copyStatus, setCopyStatus] = useState('');
+  const inviteMenu = useRef(null);
+  const canInvite = duo?.canInvite;
+  useEffect(() => {
+    if (!canInvite) return;
+    const dismiss = (event) => {
+      const menu = inviteMenu.current;
+      if (menu?.open && !menu.contains(event.target)) menu.open = false;
+    };
+    document.addEventListener('pointerdown', dismiss, true);
+    return () => document.removeEventListener('pointerdown', dismiss, true);
+  }, [canInvite]);
   const hasPendingReview = session.reviewShotIndex != null;
   const previewIndex = session.retakeIndex == null
     ? selectedShotIndex ?? session.reviewShotIndex ?? null
@@ -25,27 +37,53 @@ export default function CapturePage({ session, posePrompts = [] }) {
   const total = session.template.count;
   const captureUnit = session.mode === 'live' ? 'clip' : 'photo';
   const prompt = posePrompts[session.retakeIndex ?? session.shots.length];
+  async function copyInvite(kind) {
+    try {
+      const link = new URL('/duo', window.location.origin);
+      link.searchParams.set('room', duo.roomCode);
+      await navigator.clipboard.writeText(kind === 'link' ? link.href : duo.roomCode);
+      setCopyStatus(kind === 'link' ? 'Invite link copied.' : 'Room code copied.');
+    } catch {
+      setCopyStatus('Clipboard unavailable. You can select the room code in the camera.');
+    }
+  }
   return (
     <main className="capture-main">
       <header className="intro capture-intro">
         <Brand />
         <h1 className="sr-only focus:[outline:none]" tabIndex={-1}>Take your photos.</h1>
+        {canInvite && <details ref={inviteMenu} className="duo-invite" onKeyDown={(event) => {
+          if (event.key !== 'Escape' || !event.currentTarget.open) return;
+          event.currentTarget.open = false;
+          event.currentTarget.querySelector('summary').focus();
+        }} onToggle={(event) => {
+          if (!event.currentTarget.open) setCopyStatus('');
+        }}>
+          <summary className="button button-outline"><Icon name="invite" size={16} />Invite a friend</summary>
+          <div className="duo-invite-actions">
+            <button type="button" className="button button-outline" onClick={() => copyInvite('code')}><Icon name="copy" size={15} />Copy code</button>
+            <button type="button" className="button button-dark" onClick={() => copyInvite('link')}><Icon name="link" size={15} />Copy link</button>
+            {copyStatus && <p role="status">{copyStatus}</p>}
+          </div>
+        </details>}
       </header>
       <section className="camera-workspace" aria-label="Camera workspace">
         <div className="capture-camera">
           <CameraPreview
             {...session}
+            split={duo?.split}
+            roomCode={duo?.roomCode}
             posePrompt={prompt}
             previewShot={previewShot}
             previewNumber={previewIndex + 1}
             onSavePreview={hasPendingReview && previewIndex === session.reviewShotIndex ? savePreview : undefined}
-            onRetakePreview={() => {
+            onRetakePreview={duo ? undefined : () => {
               session.retakePhoto(previewIndex);
               setPreviewIndex(null);
             }}
             hasNotification={Boolean(session.error) || showTrackingNotice}
-            tools={(shutter) => <CameraTools session={session}>{shutter}</CameraTools>}
-            settings={
+            tools={duo ? undefined : (shutter) => <CameraTools session={session}>{shutter}</CameraTools>}
+            settings={duo ? undefined :
               <>
                 <details className="capture-settings" name="booth-camera-panel">
                   <summary><Icon name="settings" size={22} /><span>Settings</span></summary>
@@ -85,7 +123,8 @@ export default function CapturePage({ session, posePrompts = [] }) {
                         media_count: session.shots.length,
                         template_id: session.template.id,
                       });
-                    navigate('/edit');
+                    if (duo) duo.onContinue();
+                    else navigate('/edit');
                   }}
                 >
                   <span role="status" className="tabular-nums">
@@ -107,6 +146,8 @@ export default function CapturePage({ session, posePrompts = [] }) {
                 </button>
               ) : previewShot ? (
                 <button type="button" className="button button-outline capture-back" disabled={selectedShotIndex == null} onClick={() => setPreviewIndex(null)}>Back</button>
+              ) : duo ? (
+                <button type="button" className="button button-outline capture-back" onClick={duo.onBack}>Back</button>
               ) : (
                 <a className="button button-outline capture-back" href="/templates" onClick={navigateLink} aria-label="Back to layout">Back</a>
               )}

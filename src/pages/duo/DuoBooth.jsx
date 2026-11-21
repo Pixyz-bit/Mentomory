@@ -1,14 +1,25 @@
-import { useEffect, useRef, useState } from 'react';
-import { navigateLink } from '../../lib/navigation.js';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { navigate, navigateLink } from '../../lib/navigation.js';
+import Brand from '../../components/common/Brand.jsx';
+import Icon from '../../components/common/Icon.jsx';
+import CapturePage from '../capture/CapturePage.jsx';
+import TemplatesPage from '../templates/TemplatesPage.jsx';
+import { pickerLayouts } from '../../data/templates.js';
+import { memePoses } from '../../data/memePoses.js';
 import './DuoBooth.css';
 
-const api = (import.meta.env.VITE_PIXBOOTH_API_URL || 'https://pixbooth-api.chrbuilds.dev').replace(/\/$/, '');
+const localRoom = import.meta.env.DEV && !import.meta.env.VITE_PIXBOOTH_API_URL;
+const api = (import.meta.env.VITE_PIXBOOTH_API_URL ||
+  (localRoom ? '/__duo' : 'https://pixbooth-api.chrbuilds.dev')).replace(/\/$/, '');
 const websocket = import.meta.env.VITE_PIXBOOTH_WEBSOCKET_URL || 'wss://realtime.chrbuilds.dev/connection/websocket';
 
-async function request(path, { token, method = 'GET', photo, signal } = {}) {
+async function request(path, { token, method = 'GET', photo, setup, signal } = {}) {
   const response = await fetch(api + '/api/rooms' + path, {
-    method, body: photo, signal: signal || AbortSignal.timeout(6000),
-    headers: token ? { Authorization: 'Bearer ' + token } : undefined,
+    method, body: setup ? JSON.stringify(setup) : photo, signal: signal || AbortSignal.timeout(6000),
+    headers: {
+      ...(token && { Authorization: 'Bearer ' + token }),
+      ...(setup && { 'Content-Type': 'application/json' }),
+    },
   });
   if (!response.ok) throw Object.assign(new Error('Room request failed'), { status: response.status });
   if (response.status === 204) return;
@@ -31,68 +42,136 @@ function capture(video, width, quality) {
   return new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', quality));
 }
 
-export function BoothMode() {
+function ChoiceContent({ art, title, detail }) {
+  return <>
+    <img src={import.meta.env.BASE_URL + 'booth-modes/' + art + '.webp'} width="640" height="426" alt="" />
+    <strong>{title}</strong>
+    <span>{detail}</span>
+  </>;
+}
+
+function ChoiceScreen({ title, children }) {
   return (
-    <main className="duo-page">
-      <a href="/" onClick={navigateLink}>Back</a>
-      <h1 tabIndex={-1}>Who’s in the booth?</h1>
-      <div className="duo-actions">
-        <a className="button" href="/templates" onClick={navigateLink}>Solo</a>
-        <a className="button button-outline" href="/duo" onClick={navigateLink}>Duo</a>
-      </div>
+    <main className="duo-page template-main">
+      <header className="intro"><Brand /></header>
+      <section className="duo-choice-content workflow-step-enter">
+        <h1 tabIndex={-1}>{title}</h1>
+        {children}
+      </section>
     </main>
   );
 }
 
-export function DuoBooth() {
-  const [room, setRoom] = useState(null);
-  const [code, setCode] = useState('');
-  const [pending, setPending] = useState(false);
-  const [error, setError] = useState('');
+function ChoiceActions({ back, children }) {
+  return <div className="duo-choice-actions">
+    <a className="button button-outline" href={back} onClick={navigateLink}>Back</a>
+    {children}
+  </div>;
+}
 
-  async function enter(event, joining) {
-    event.preventDefault();
-    if (pending) return;
+function ChoiceCard({ selected, onClick, disabled, children, ...content }) {
+  return <div className="duo-choice" data-selected={selected}>
+    <button type="button" className="duo-choice-button" aria-pressed={selected} disabled={disabled} onClick={onClick}>
+      <ChoiceContent {...content} />
+      {selected && <span className="duo-choice-check"><Icon name="check" size={15} /></span>}
+    </button>
+    {children}
+  </div>;
+}
+
+export function BoothMode() {
+  const [choice, setChoice] = useState(null);
+  return <ChoiceScreen title="Take photos solo or with a friend">
+    <div className="duo-choice-grid" role="group" aria-label="Booth mode">
+      <ChoiceCard art="solo" title="Solo" detail="Take photos on your own."
+        selected={choice === 'solo'} onClick={() => setChoice('solo')} />
+      <ChoiceCard art="duo" title="Duo" detail="Share a booth with a friend."
+        selected={choice === 'duo'} onClick={() => setChoice('duo')} />
+    </div>
+    <ChoiceActions back="/">
+      <button className="button button-dark" disabled={!choice}
+        onClick={() => navigate(choice === 'solo' ? '/templates' : '/duo')}>Continue <Icon name="arrow" /></button>
+    </ChoiceActions>
+  </ChoiceScreen>;
+}
+
+export function DuoBooth({ onContinue }) {
+  const [room, setRoom] = useState(null);
+  const [inviteCode] = useState(() => {
+    const value = typeof window === 'undefined' ? null : new URLSearchParams(window.location.search).get('room');
+    return /^\d{10}$/.test(value || '') ? value : '';
+  });
+  const [code, setCode] = useState(inviteCode);
+  const [pending, setPending] = useState(Boolean(inviteCode));
+  const [error, setError] = useState('');
+  const [choice, setChoice] = useState(inviteCode ? 'join' : null);
+  const joining = choice === 'join';
+  const inviteAttempted = useRef(false);
+
+  const enter = useCallback(async (isJoin, roomId) => {
     setPending(true);
     setError('');
     try {
-      const roomId = code.replace(/\s/g, '');
-      const result = await request(joining ? '/' + roomId + '/join' : '', { method: 'POST' });
-      setRoom({ ...result, roomId: result.roomId || roomId, role: joining ? 'guest' : 'host' });
+      const result = await request(isJoin ? '/' + roomId + '/join' : '', { method: 'POST' });
+      setRoom({ ...result, roomId: result.roomId || roomId, role: isJoin ? 'guest' : 'host' });
     } catch (failure) {
       setError(failure.status === 404 ? 'Room closed or code not found.' :
         failure.status === 409 ? 'This room already has two people.' : 'Could not connect to the booth. Try again.');
     } finally {
       setPending(false);
     }
+  }, []);
+
+  useEffect(() => {
+    if (!inviteCode || inviteAttempted.current) return;
+    inviteAttempted.current = true;
+    enter(true, inviteCode);
+  }, [enter, inviteCode]);
+
+  function submit(event) {
+    event.preventDefault();
+    if (pending || !choice || (joining && code.length !== 10)) return;
+    enter(joining, code);
   }
 
-  return (
-    <main className="duo-page">
-      <a href="/play" onClick={navigateLink}>Back to Solo or Duo</a>
-      <h1 tabIndex={-1}>Duo booth</h1>
-      {room ? <DuoRoom room={room} onLeave={() => setRoom(null)} /> : (
-        <div className="duo-actions">
-          <button className="button" disabled={pending} onClick={(event) => enter(event, false)}>Create room</button>
-          <form onSubmit={(event) => enter(event, true)}>
-            <label htmlFor="duo-code">Room code</label>
-            <div className="duo-actions">
-              <input id="duo-code" inputMode="numeric" autoComplete="off" required pattern="[0-9]{10}"
-                maxLength={10} value={code} onChange={(event) => setCode(event.target.value.replace(/\D/g, ''))} />
-              <button className="button button-outline" disabled={pending} type="submit">Join room</button>
-            </div>
-          </form>
-        </div>
-      )}
+  if (room) return <DuoRoom room={room} onLeave={() => setRoom(null)} onContinue={onContinue} />;
+  function select(next) {
+    setChoice(next);
+    setError('');
+  }
+  return <ChoiceScreen title="Join a room or start your own">
+    <form onSubmit={submit}>
+      <div className="duo-choice-grid" role="group" aria-label="Room options">
+        <ChoiceCard art="join" title="Join room" detail="Enter the code your friend gives you."
+          selected={joining} disabled={pending} onClick={() => select('join')}>
+          <div className="duo-room-field">
+            <label htmlFor="duo-code">10-digit room code</label>
+            <input id="duo-code" inputMode="numeric" autoComplete="off" required={joining} disabled={pending}
+              pattern={joining ? '[0-9]{10}' : undefined} maxLength={10} placeholder="1234567890" value={code}
+              onFocus={() => { if (!joining) select('join'); }}
+              onChange={(event) => setCode(event.target.value.replace(/\D/g, ''))} />
+          </div>
+        </ChoiceCard>
+        <ChoiceCard art="create" title="Create room" detail="Start a booth and share your room code."
+          selected={choice === 'create'} disabled={pending} onClick={() => select('create')} />
+      </div>
       {error && <p role="alert">{error}</p>}
-    </main>
-  );
+      <ChoiceActions back="/play">
+        <button className="button button-dark" disabled={!choice || pending || (joining && code.length !== 10)}
+          aria-busy={pending || undefined} type="submit">
+          Continue
+          <Icon name="arrow" />
+        </button>
+      </ChoiceActions>
+    </form>
+  </ChoiceScreen>;
 }
 
-function DuoRoom({ room, onLeave }) {
+function DuoRoom({ room, onLeave, onContinue }) {
   const { role, roomId, memberToken: token } = room;
   const video = useRef(null);
   const stream = useRef(null);
+  const cameraRequest = useRef(0);
   const [camera, setCamera] = useState(false);
   const [opening, setOpening] = useState(false);
   const [remote, setRemote] = useState('');
@@ -100,35 +179,49 @@ function DuoRoom({ room, onLeave }) {
   const [countdown, setCountdown] = useState(null);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
-  const [copied, setCopied] = useState(false);
   const call = (suffix, options) => request('/' + roomId + suffix, { token, ...options });
   const last = state?.shots.at(-1);
-  const completeIndex = state?.shots.findLastIndex((shot) => shot.photos.length === 2) ?? -1;
+  const [captured, setCaptured] = useState([]);
+  const template = pickerLayouts.find((layout) => layout.id === state?.setup?.layoutId);
+  const prompts = state?.setup?.prompts.map((index) => memePoses[index]) || [];
+  const completeCount = state?.shots.filter((shot) => shot.photos.length === 2).length || 0;
   const waitingForPhotos = last && last.photos.length < 2 && state.serverTime < last.captureAt + 12_000;
-  const canStart = camera && state?.ready.length === 2 && !waitingForPhotos && state.shots.length < 4;
+  const canStart = camera && state?.ready.length === 2 && !waitingForPhotos && completeCount < template?.count;
+
+  function stopCamera() {
+    cameraRequest.current++;
+    stream.current?.getTracks().forEach((track) => track.stop());
+    stream.current = null;
+    setCamera(false);
+    setOpening(false);
+  }
 
   useEffect(() => () => {
+    cameraRequest.current++;
     stream.current?.getTracks().forEach((track) => track.stop());
   }, []);
 
   async function enableCamera() {
+    const attempt = ++cameraRequest.current;
     setOpening(true);
     setError('');
     try {
       const opened = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
-      if (!video.current) {
+      if (attempt !== cameraRequest.current || !video.current) {
         opened.getTracks().forEach((track) => track.stop());
         return;
       }
       stream.current = opened;
       video.current.srcObject = opened;
       await video.current.play();
-      setCamera(true);
+      if (attempt === cameraRequest.current) setCamera(true);
     } catch {
-      stream.current?.getTracks().forEach((track) => track.stop());
-      setError('Camera unavailable. Check this site’s camera permission and try again.');
+      if (attempt === cameraRequest.current) {
+        stopCamera();
+        setError('Camera unavailable. Check this site’s camera permission and try again.');
+      }
     } finally {
-      setOpening(false);
+      if (attempt === cameraRequest.current) setOpening(false);
     }
   }
 
@@ -142,7 +235,7 @@ function DuoRoom({ room, onLeave }) {
     let refreshTimer;
     let shotTimer;
     let countdownTimer;
-    let scheduled = -1;
+    let scheduled;
     let refreshing = false;
     let refreshRequested = false;
     let centrifuge;
@@ -150,12 +243,12 @@ function DuoRoom({ room, onLeave }) {
     function schedule(snapshot, started) {
       const index = snapshot.shots.length - 1;
       const shot = snapshot.shots[index];
-      if (!camera || !shot || index === scheduled || shot.photos.includes(role)) return;
+      if (!camera || !shot || shot.captureAt === scheduled || shot.photos.includes(role)) return;
       const received = performance.now();
       const offset = shot.captureAt - snapshot.serverTime - (received - started) / 2;
       if (offset < -700) return;
       const target = received + offset;
-      scheduled = index;
+      scheduled = shot.captureAt;
       clearTimeout(shotTimer);
       clearInterval(countdownTimer);
       const tick = () => setCountdown(Math.max(1, Math.ceil((target - performance.now()) / 1000)));
@@ -224,7 +317,7 @@ function DuoRoom({ room, onLeave }) {
       }
     }
 
-    import('centrifuge').then(({ Centrifuge }) => {
+    if (!localRoom) import('centrifuge').then(({ Centrifuge }) => {
       if (signal.aborted) return;
       centrifuge = new Centrifuge(websocket, {
         getToken: async () => (await send('/token', { method: 'POST' })).token,
@@ -257,68 +350,93 @@ function DuoRoom({ room, onLeave }) {
     }
   }
 
-  async function download() {
-    setBusy(true);
+  async function saveSetup(layoutId, posePrompts) {
+    setError('');
     try {
-      const photos = await Promise.all(['host', 'guest'].map(async (person) =>
-        createImageBitmap(await call('/photos/' + completeIndex + '/' + person))));
-      const canvas = document.createElement('canvas');
-      const width = photos[0].width;
-      canvas.width = width * 2;
-      canvas.height = photos[0].height;
-      const ctx = canvas.getContext('2d');
-      photos.forEach((photo, index) => {
-        ctx.drawImage(photo, index * width, 0);
-        photo.close();
+      const layout = pickerLayouts.find((item) => item.id === layoutId);
+      const updated = await call('/setup', {
+        method: 'POST',
+        setup: { layoutId, count: layout.count, prompts: posePrompts.map((pose) => memePoses.indexOf(pose)) },
       });
-      const link = document.createElement('a');
-      link.href = canvas.toDataURL('image/jpeg', 0.94);
-      link.download = 'pixbooth-duo-' + (completeIndex + 1) + '.jpg';
-      link.click();
+      setState(updated);
     } catch {
-      setError('Could not download the picture. Try again.');
-    } finally {
-      setBusy(false);
+      setError('Could not save the shared layout. Try again.');
     }
   }
 
-  const pane = (position, label) => (
-    <div className="duo-pane">
-      {role === position ? <video ref={video} autoPlay muted playsInline /> :
-        remote ? <img src={remote} alt="" /> : <span className="duo-empty">{state?.guestJoined ? 'Camera off' : 'Waiting for a friend'}</span>}
-      <span className="duo-person">{label}{role === position ? ' · You' : ''}</span>
-    </div>
-  );
+  useEffect(() => {
+    if (completeCount <= captured.length) return;
+    const controller = new AbortController();
+    let previewUrl;
+    let retained = false;
+    let retry;
+    const index = captured.length;
+    async function loadPair() {
+      try {
+        const images = await Promise.all(['host', 'guest'].map((person) =>
+          request('/' + roomId + '/photos/' + index + '/' + person, {
+            token, signal: AbortSignal.any([controller.signal, AbortSignal.timeout(6000)]),
+          })));
+        const photos = await Promise.all(images.map((blob) => createImageBitmap(blob)));
+        const canvas = document.createElement('canvas');
+        const width = photos[0].width;
+        canvas.width = width * 2;
+        canvas.height = photos[0].height;
+        const ctx = canvas.getContext('2d');
+        photos.forEach((photo, position) => {
+          ctx.drawImage(photo, position * width, 0);
+          photo.close();
+        });
+        const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.94));
+        if (controller.signal.aborted) return;
+        if (!blob) throw new Error();
+        previewUrl = URL.createObjectURL(blob);
+        setCaptured((items) => [...items, { type: 'photo', url: previewUrl, blob }]);
+        retained = true;
+      } catch {
+        if (!controller.signal.aborted) retry = setTimeout(loadPair, 1500);
+      }
+    }
+    loadPair();
+    return () => {
+      controller.abort();
+      clearTimeout(retry);
+      if (previewUrl && !retained) URL.revokeObjectURL(previewUrl);
+    };
+  }, [completeCount, captured.length, roomId, token]);
 
-  return (
-    <>
-      <div className="duo-room-bar">
-        <span>Room <strong>{roomId}</strong></span>
-        <button className="button button-outline" onClick={async () => {
-          try {
-            await navigator.clipboard.writeText(roomId);
-            setCopied(true);
-          } catch {
-            setError('Copy the room code shown above.');
-          }
-        }}>{copied ? 'Copied' : 'Copy code'}</button>
-        <button className="button button-outline" onClick={onLeave}>Leave</button>
-      </div>
-      <div className="duo-view">
-        {pane('host', 'Person 1')}
-        {pane('guest', 'Person 2')}
-        {countdown !== null && <span className="duo-countdown" aria-live="polite">{countdown}</span>}
-      </div>
-      <div className="duo-actions duo-controls">
-        {!camera && <button className="button button-outline" disabled={opening} onClick={enableCamera}>
-          {opening ? 'Opening camera…' : 'Enable camera'}
-        </button>}
-        <button className="button duo-shutter" onClick={start} disabled={!canStart || busy}>Take photo</button>
-        {completeIndex >= 0 && <button className="button button-outline" onClick={download} disabled={busy}>Download photo</button>}
-      </div>
-      <p role="status">{waitingForPhotos ? 'Shared shot in progress' : state?.shots.length === 4 ?
-        'All four shots taken' : canStart ? 'Both cameras ready' : 'Both cameras must be on to take a photo'}</p>
-      {error && <p role="alert">{error}</p>}
-    </>
-  );
+  const shotUrls = useRef([]);
+  shotUrls.current = captured;
+  useEffect(() => () => {
+    shotUrls.current.forEach(({ url }) => URL.revokeObjectURL(url));
+  }, []);
+
+  if (!template && role === 'host') return <TemplatesPage duo setupError={error} onContinue={saveSetup} onBack={onLeave} />;
+  if (!template) return <ChoiceScreen title="Waiting for your host">
+    <p>Your camera will open for setup once your friend picks a style and layout.</p>
+    {error && <p role="alert">{error}</p>}
+    <button className="button button-outline" onClick={onLeave}>Back</button>
+  </ChoiceScreen>;
+
+  const completed = captured.length === template.count;
+  return <div className="app booth-app duo-capture-app">
+    <CapturePage
+      posePrompts={prompts}
+      duo={{
+        roomCode: roomId,
+        canInvite: role === 'host',
+        onBack: onLeave,
+        split: { role, remote, peerStatus: state.guestJoined ? 'Camera off' : 'Waiting for a friend' },
+        onContinue: () => onContinue(template.id, captured.map(({ blob, ...shot }) => ({
+          ...shot, url: URL.createObjectURL(blob),
+        })), prompts),
+      }}
+      session={{
+        template, shots: captured, completed, countdown, video, busy: busy || Boolean(waitingForPhotos),
+        status: opening ? 'loading' : camera ? 'ready' : 'idle',
+        cameraActive: camera, mirror: true, mode: 'photo', sticker: 'none', stickerReady: canStart && !busy,
+        openCamera: enableCamera, stopCamera, takePhoto: start, error,
+      }}
+    />
+  </div>;
 }
