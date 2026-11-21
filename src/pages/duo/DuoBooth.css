@@ -331,3 +331,13 @@
 .duo-pane-label[data-row-divider] {
   border-top: 2px solid white;
 }
+
+.duo-video-stats:not(:empty) {
+  display: table;
+  margin-top: .2rem;
+  padding: .15rem .35rem;
+  border-radius: .25rem;
+  background: #111;
+  font-size: .7rem;
+  font-weight: normal;
+}

@@ -25,6 +25,17 @@ function PeerVideo({ stream, label, filter }) {
   return <video className="duo-live-video" ref={video} autoPlay muted playsInline aria-label={label} style={{ filter }} />;
 }
 
+function previewStatus(split, seat) {
+  if (!split.videoStats) return '';
+  if (seat !== split.role && !split.liveStreams[seat]) {
+    return split.remote[seat] ? 'JPEG snapshots' : '';
+  }
+  const stats = split.videoStats[seat];
+  if (!stats) return '';
+  return [stats.mode, stats.fps ? Math.round(stats.fps) + ' fps' : '', stats.rtt != null ? stats.rtt + ' ms RTT' : '']
+    .filter(Boolean).join(' · ');
+}
+
 export default function CameraPreview({
   status,
   cameraActive,
@@ -125,6 +136,7 @@ export default function CameraPreview({
                 data-row-divider={index >= grid.columns || undefined}
                 data-top-right={index === grid.columns - 1 || undefined}>
                 Person {index + 1}{split.role === seat ? ' · You' : ''}
+                {split.videoStats && <small className="duo-video-stats">{previewStatus(split, seat)}</small>}
               </span>
             ))}
             {roomCode && <span className="duo-room-code">Room <strong>{roomCode}</strong></span>}

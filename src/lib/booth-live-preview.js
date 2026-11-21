@@ -104,6 +104,23 @@ export function createLivePreview({ role, stream, send, onStream, iceServers = [
 
   return {
     update,
+    async stats() {
+      const results = await Promise.allSettled([...peers.entries()].map(async ([seat, { connection }]) => {
+        const report = await connection.getStats();
+        const entries = [...report.values()];
+        const transport = entries.find(({ type }) => type === 'transport');
+        const pair = report.get(transport?.selectedCandidatePairId);
+        const local = report.get(pair?.localCandidateId);
+        const remote = report.get(pair?.remoteCandidateId);
+        const video = entries.find((entry) => entry.type === 'inbound-rtp' && entry.kind === 'video');
+        return [seat, {
+          mode: local?.candidateType === 'relay' || remote?.candidateType === 'relay' ? 'Relay' : pair ? 'Direct' : 'Live',
+          fps: video?.framesPerSecond,
+          rtt: typeof pair?.currentRoundTripTime === 'number' ? Math.round(pair.currentRoundTripTime * 1000) : undefined,
+        }];
+      }));
+      return Object.fromEntries(results.filter((result) => result.status === 'fulfilled').map((result) => result.value));
+    },
     close() {
       closed = true;
       for (const seat of peers.keys()) remove(seat);

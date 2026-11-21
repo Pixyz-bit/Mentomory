@@ -193,6 +193,9 @@ function DuoRoom({ room, onLeave, onContinue }) {
   const [opening, setOpening] = useState(false);
   const [remote, setRemote] = useState({});
   const [liveStreams, setLiveStreams] = useState({});
+  const [showVideoStats] = useState(() => typeof window !== 'undefined' &&
+    new URLSearchParams(window.location.search).get('videoStats') === '1');
+  const [videoStats, setVideoStats] = useState({});
   const [state, setState] = useState(null);
   const [disconnected, setDisconnected] = useState(false);
   const revision = useRef(0);
@@ -455,17 +458,30 @@ function DuoRoom({ room, onLeave, onContinue }) {
     }).catch(() => {});
     refresh();
     if (camera) uploadPreview();
+    let statsTimer;
+    async function refreshVideoStats() {
+      if (signal.aborted) return;
+      const incoming = await live?.stats();
+      if (signal.aborted) return;
+      setVideoStats({
+        ...incoming,
+        [role]: { mode: 'Camera', fps: stream.current?.getVideoTracks()[0]?.getSettings().frameRate },
+      });
+      statsTimer = setTimeout(refreshVideoStats, 2000);
+    }
+    if (showVideoStats) refreshVideoStats();
     return () => {
       controller.abort();
       live?.close();
       centrifuge?.disconnect();
       clearTimeout(refreshTimer);
       clearTimeout(previewTimer);
+      clearTimeout(statsTimer);
       clearTimeout(shotTimer);
       clearInterval(countdownTimer);
       Object.values(previewUrls).forEach((url) => URL.revokeObjectURL(url));
     };
-  }, [roomId, token, role, camera, seats.length]);
+  }, [roomId, token, role, camera, seats.length, showVideoStats]);
 
   async function start() {
     if (role !== 'host') return;
@@ -577,6 +593,7 @@ function DuoRoom({ room, onLeave, onContinue }) {
         onBack: leave,
         split: {
           role, remote, liveStreams, seats, localFilter, changeFilter, filters: state.filters || {},
+          videoStats: showVideoStats ? videoStats : null,
           members: state.members || (state.guestJoined ? defaultSeats : ['host']),
         },
         onContinue: () => onContinue(template.id, captured.map(({ blob, ...shot }) => ({
