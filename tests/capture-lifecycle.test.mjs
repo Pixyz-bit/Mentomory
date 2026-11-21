@@ -25,6 +25,7 @@ function harness(
     retakeIndex = null,
     mode = 'photo',
     delay = 0,
+    autoStart = true,
     count = 1,
     sticker = 'none',
     faceDraw,
@@ -108,6 +109,7 @@ function harness(
     shots,
     sequence: { current: false },
     setAutoCapture: (value) => (snapshot.autoCapture = value),
+    autoStart,
     template: { count },
     mode,
     mirror: true,
@@ -125,6 +127,7 @@ function harness(
     cancelCountdown() {
       clearInterval(props.timer.current);
       props.timer.current = null;
+      snapshot.countdown = null;
     },
     releaseCamera() {
       snapshot.stops++;
@@ -133,6 +136,7 @@ function harness(
     setStatus: (value) => snapshot.statuses.push(value),
     setRecordProgress: (value) => (snapshot.progress = value),
     setShots: (value) => (snapshot.shots = value),
+    onReviewShot: (index) => (snapshot.reviewedShot = index),
     setFlash: (value) => (snapshot.flash = value),
     setCountdown: (value) => (snapshot.countdown = value),
   };
@@ -222,6 +226,26 @@ test('countdown advances exactly once while duplicate capture clicks are blocked
   assert.equal(canvases.length, 1);
   canvases[0].blobCallback(new Blob(['photo']));
   assert.equal(snapshot.shots.length, 1);
+});
+test('a manual countdown captures one shot and waits for review', (t) => {
+  const { api, snapshot, canvases } = harness(t, {
+    autoStart: false,
+    count: 4,
+    delay: 3,
+  });
+  api.takePhoto();
+  const tick = snapshot.interval;
+  tick();
+  tick();
+  tick();
+  assert.equal(canvases.length, 1);
+  canvases[0].blobCallback(new Blob(['photo']));
+  tick();
+  assert.equal(canvases.length, 1);
+  assert.equal(snapshot.shots.length, 1);
+  assert.equal(snapshot.reviewedShot, 0);
+  assert.equal(snapshot.countdown, null);
+  assert.equal(snapshot.autoCapture, false);
 });
 test('unmount cancels recording/timer, stops tracks and revokes owned capture URLs', (t) => {
   const { props, snapshot } = harness(t, {

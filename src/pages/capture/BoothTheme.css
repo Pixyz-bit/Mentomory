@@ -7,304 +7,652 @@
   --surface: #f5f5f5;
   --radius: 10px;
   --control-radius: 10px;
-  max-width: none;
-  padding-inline: 0;
-  color: var(--ink);
+  @apply min-h-[100dvh];
+  @apply [max-width:none];
+  @apply [padding-inline:0];
+  @apply [color:var(--ink)];
   font-family: 'Plus Jakarta Sans', sans-serif;
-  background-color: var(--paper);
+  @apply [background-color:var(--paper)];
   background-image:
     linear-gradient(#0001 1px, transparent 1px), linear-gradient(90deg, #0001 1px, transparent 1px);
   background-size: 32px 32px;
   -webkit-font-smoothing: antialiased;
 }
-.booth-app :is(.workflow-brand-row, .capture-main, footer) {
-  width: min(1216px, calc(100% - 64px));
-  margin-inline: auto;
+.booth-app .capture-main {
+  @apply [margin-inline:auto];
 }
-.booth-app .workflow-header {
-  background: var(--paper);
-  border-bottom: 2px solid var(--ink);
+.booth-app .camera-workspace {
+  @apply w-[100%];
+  @apply [max-width:var(--workflow-content-width)];
+  @apply [margin-inline:auto];
 }
-.booth-app .workflow-nav li a,
-.booth-app .step-unavailable {
-  font-weight: 600;
-  color: var(--muted);
-  border-radius: 10px;
+.booth-app .camera-stage {
+  @apply [grid-template-columns:minmax(0,_1fr)];
 }
-.booth-app .workflow-nav li a[aria-current='step'] {
-  color: var(--ink);
-  font-weight: 800;
+.capture-review-column {
+  @apply grid min-w-0 min-h-0 gap-3;
 }
-.booth-app .step-number {
-  width: 34px;
-  height: 34px;
-  border: 2px solid var(--ink);
-  border-radius: 8px;
-  font-weight: 800;
-  font-variant-numeric: tabular-nums;
+.booth-app .capture-action-bar {
+  @apply sticky;
+  @apply [bottom:0];
+  @apply [z-index:15];
+  @apply [background:var(--paper)];
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
-.booth-app .workflow-home {
-  font-weight: 700;
+.booth-app .capture-action-bar .capture-continue {
+  @apply grid;
+  @apply [grid-template-columns:auto_minmax(0,_1fr)];
+  @apply items-center;
+  @apply [padding-block:10px_6px];
+  @apply gap-[6px];
+}
+.capture-action-bar .capture-back {
+  @apply [grid-column:1];
+  @apply [grid-row:1];
+}
+.capture-action-bar .capture-next-actions {
+  @apply [grid-column:2];
+  @apply [grid-row:1];
+}
+.capture-action-bar .capture-next-actions {
+  @apply [width:min(100%,_420px)];
+}
+.booth-app .capture-action-bar .capture-next-actions .button {
+  @apply whitespace-normal;
+  @apply gap-[6px];
+}
+.booth-app .capture-action-bar :is(.capture-back, .capture-next-actions .button) {
+  @apply min-h-[50px] px-4 py-3 text-[15px] font-extrabold;
+}
+.booth-app .capture-action-bar .capture-back {
+  @apply no-underline whitespace-nowrap;
+}
+.capture-settings,
+.capture-setting-badges {
+  @apply absolute;
+  @apply [z-index:14];
+}
+.capture-settings {
+  @apply right-3 bottom-3;
+}
+.capture-settings > summary,
+.camera-photo-effects > summary {
+  @apply flex min-h-12 w-16 cursor-pointer list-none flex-col items-center justify-center gap-1 rounded-xl bg-black/45 px-2 py-1.5 text-center text-[10px] font-bold leading-tight text-white;
+}
+:is(.capture-settings, .camera-photo-effects) > summary::-webkit-details-marker {
+  @apply hidden;
+}
+:is(.capture-settings, .camera-photo-effects)[open] > summary {
+  @apply bg-black/70;
+}
+.capture-settings > summary img {
+  @apply block invert;
+}
+@media (hover: hover) {
+  :is(.capture-settings, .camera-photo-effects) > summary:hover {
+    @apply bg-black/65;
+  }
+  .camera-effect-arrow:enabled:hover {
+    @apply bg-white/20;
+  }
+}
+.capture-settings > .settings-panel {
+  @apply absolute;
+  @apply [right:0];
+  @apply [bottom:calc(100%_+_8px)];
+  @apply [width:min(270px,_calc(100cqw_-_24px))];
+  @apply max-h-[45dvh];
+  @apply overflow-auto;
+  @apply p-[12px];
+  @apply [border:1px_solid_var(--ink)];
+  @apply rounded-[10px];
+  @apply [background:var(--paper)];
+  @apply [box-shadow:3px_3px_0_var(--ink)];
+}
+.capture-settings .session-settings {
+  @apply gap-[12px];
+}
+.capture-setting-badges {
+  @apply [top:12px];
+  @apply [left:12px];
+  @apply flex;
+  @apply gap-[5px];
+  @apply pointer-events-none;
+}
+.capture-settings[open] + .capture-setting-badges {
+  @apply hidden;
+}
+.capture-setting-badges span {
+  @apply rounded-full bg-black/45 px-2 py-1 text-xs font-bold text-white;
+}
+@container camera-preview (max-width: 540px) {
+  .camera-frame-area:has(.camera-effect-carousel) .capture-settings {
+    @apply [bottom:76px];
+  }
+}
+.booth-app .capture-intro {
+  @apply [padding-block:calc(20px_+_env(safe-area-inset-top,_0px))_18px];
+  @apply text-center;
+}
+.booth-app .capture-intro h1 {
+  @apply mb-[12px];
+}
+.booth-app .floating-shutter:has(.camera-effect-carousel) {
+  @apply [bottom:7px];
+  @apply [width:min(400px,_calc(100%_-_24px))];
+  @apply gap-[8px];
+}
+.booth-app .floating-shutter:has(.cancel-countdown) {
+  @apply bottom-3;
+}
+@media (max-width: 899px), (max-height: 419px) {
+  .booth-app .floating-shutter:has(.camera-effect-carousel) {
+    @apply [top:calc(var(--preview-height)_-_7px)];
+    @apply [bottom:auto];
+  }
+}
+.camera-effect-carousel {
+  @apply w-full rounded-[30px] bg-black/40 px-1.5 py-0.5;
+  @apply [color:#fff];
+  @apply text-center;
+}
+.camera-effect-track {
+  @apply grid;
+  @apply [grid-template-columns:32px_minmax(0,_1fr)_auto_minmax(0,_1fr)_32px];
+  @apply items-center;
+  @apply gap-[4px];
+  @apply [touch-action:pan-y];
+}
+.camera-effect-arrow {
+  @apply grid;
+  @apply [place-items:center];
+  @apply w-[32px];
+  @apply h-[36px];
+  @apply p-[0];
+  @apply [border:0];
+  @apply rounded-[50%];
+  @apply [background:transparent];
+  @apply [color:inherit];
+}
+.camera-effect-arrow:first-child svg {
+  rotate: 180deg;
+}
+.camera-effect-arrow svg {
+  filter: drop-shadow(0 1px 2px #000);
+}
+.camera-effect-neighbors {
+  @apply flex;
+  @apply items-center;
+  @apply justify-evenly;
+  @apply gap-[4px];
+}
+.camera-effect-item {
+  @apply relative;
+  @apply [flex:0_1_36px];
+  @apply min-w-[0];
+}
+.camera-effect-option {
+  @apply grid;
+  @apply [place-items:center];
+  @apply w-[100%];
+  @apply min-w-[0];
+  @apply [aspect-ratio:1];
+  @apply p-[2px];
+  @apply [border:1px_solid_var(--paper)];
+  @apply rounded-[50%];
+  @apply [background:var(--surface)];
+  @apply [opacity:0.58];
+}
+.camera-effect-option .provided-icon {
+  @apply [width:min(24px,_100%)];
+  @apply [height:auto];
+  filter: brightness(0);
+}
+.camera-effect-option:is(:hover, :focus-visible) {
+  @apply [background:var(--paper)];
+  @apply [opacity:0.85];
+  outline: 2px solid var(--paper);
+  @apply [outline-offset:2px];
+}
+@container camera-preview (max-width: 440px) {
+  .camera-effects-before > :first-child,
+  .camera-effects-after > :last-child {
+    @apply hidden;
+  }
+}
+@container camera-preview (max-width: 320px) {
+  .camera-effects-before > :nth-child(2),
+  .camera-effects-after > :nth-child(2) {
+    @apply hidden;
+  }
+}
+.camera-effect-carousel .sticker-icon,
+.booth-app .shutter-core .sticker-icon {
+  @apply block;
+  @apply w-[100%];
+  @apply h-[100%];
+  @apply rounded-[50%];
+}
+.booth-app .shutter-core .sticker-icon {
+  @apply [background:var(--paper)];
+}
+.booth-app .camera-effect-carousel .shutter-button {
+  @apply w-[60px];
+  @apply h-[60px];
+  @apply p-[3px];
+  @apply [border:2px_solid_var(--paper)];
+  @apply rounded-[50%];
+  @apply [background:transparent];
+  @apply [opacity:1];
+}
+.booth-app .camera-effect-carousel .shutter-core {
+  @apply rounded-[50%];
+  @apply [background:var(--paper)];
+}
+.booth-app .camera-effect-carousel .shutter-core .provided-icon {
+  filter: brightness(0);
+}
+.booth-app .camera-effect-carousel .shutter-button:hover:not(:disabled) {
+  @apply [cursor:pointer];
+  @apply [box-shadow:0_0_0_3px_rgb(255_255_255_/_35%)];
+}
+.booth-app .shutter-control {
+  @apply relative;
+}
+.shutter-tooltip {
+  @apply absolute;
+  @apply [bottom:calc(100%_+_8px)];
+  @apply [left:50%];
+  translate: -50% 0;
+  @apply [padding:4px_8px];
+  @apply rounded-[5px];
+  @apply [background:var(--ink)];
+  @apply [color:var(--paper)];
+  @apply text-[12px];
+  @apply [white-space:nowrap];
+  @apply pointer-events-none;
+  @apply [visibility:hidden];
+}
+.camera-effect-item .shutter-tooltip {
+  @apply [bottom:calc(50%_+_38px)];
+}
+.shutter-control:has(.shutter-button:focus-visible) .shutter-tooltip,
+.camera-effect-option:focus-visible + .shutter-tooltip {
+  @apply [visibility:visible];
+}
+@media (hover: hover) {
+  .shutter-control:hover .shutter-tooltip,
+  .camera-effect-option:hover + .shutter-tooltip {
+    @apply [visibility:visible];
+  }
+}
+.booth-app .capture-settings .switch {
+  @apply flex;
+  @apply [flex:0_0_46px];
+  @apply items-center;
+  @apply justify-start;
+  @apply w-[46px];
+  @apply h-[28px];
+  @apply min-h-[28px];
+  @apply p-[3px];
+  @apply [border-width:1px];
+}
+.booth-app .capture-settings .switch span {
+  @apply [flex:none];
+  @apply w-[20px];
+  @apply h-[20px];
+}
+.booth-app .capture-settings .switch.on span {
+  transform: translateX(18px);
+}
+.booth-app .capture-settings .segmented button {
+  @apply min-h-[40px];
+  @apply [padding-block:6px];
+}
+@media (min-width: 900px) and (min-height: 420px) {
+  .app.booth-app {
+    @apply [height:auto];
+  }
+  .booth-app .capture-main {
+    @apply grid;
+    @apply [grid-template-rows:auto_minmax(0,_1fr)];
+    @apply h-dvh min-h-[540px];
+    @apply pb-[16px];
+  }
+  .app.booth-app .capture-main {
+    @apply [width:min(1000px,_max(760px,_130dvh),_calc(100%_-_var(--safe-left)_-_var(--safe-right)))];
+  }
+  .booth-app .camera-workspace {
+    @apply [flex:none];
+    @apply h-full [max-width:none];
+    @apply min-h-[0];
+    @apply [grid-template-columns:minmax(0,_1fr)] [grid-template-rows:minmax(255px,1fr)_auto];
+    @apply gap-4;
+    @apply py-0;
+  }
+  .booth-app .camera-workspace > .capture-camera {
+    @apply [grid-row:1];
+    @apply [height:auto];
+    @apply [max-height:none];
+    @apply [align-self:stretch];
+  }
+  .booth-app .capture-review-column {
+    @apply self-stretch items-center grid-cols-[minmax(0,1fr)_minmax(260px,30%)];
+  }
+  .booth-app .capture-action-bar .capture-continue {
+    @apply border-0 py-0;
+  }
+  .booth-app .camera-stage {
+    @apply [grid-template-rows:minmax(0,_1fr)];
+    @apply flex-1 min-h-0;
+  }
+  .booth-app .capture-camera > .booth {
+    @apply flex;
+    @apply flex-col;
+    @apply min-h-[0];
+  }
+  .booth-app .camera-frame-area {
+    @apply w-[100%];
+    @apply min-w-[0];
+    @apply max-w-[100%];
+    @apply h-[100%];
+    @apply [aspect-ratio:auto];
+  }
 }
 .booth-app .panel-title {
-  font-size: 18px;
-  font-weight: 800;
-  line-height: 1.3;
-  letter-spacing: -0.025em;
+  @apply text-[18px];
+  @apply [font-weight:800];
+  @apply leading-[1.3];
+  @apply [letter-spacing:-0.025em];
 }
 .booth-app .capture-position,
 .booth-app .camera-toggle-label {
-  color: var(--muted);
-  font-size: 12px;
-  line-height: 1.5;
+  @apply [color:var(--muted)];
+  @apply text-[12px];
+  @apply leading-[1.5];
 }
 .booth-app .viewfinder {
-  border: 2px solid var(--ink);
-  border-radius: 10px;
-  box-shadow: none;
+  @apply [border:2px_solid_var(--ink)];
+  @apply rounded-[10px];
+  @apply [box-shadow:none];
 }
 .booth-app .viewfinder:has(.camera-placeholder) {
-  background-color: var(--paper);
-  background-image:
-    linear-gradient(#0001 1px, transparent 1px), linear-gradient(90deg, #0001 1px, transparent 1px);
-  background-size: 32px 32px;
+  @apply [background:var(--paper)];
 }
 .booth-app .camera-placeholder {
-  padding: 24px;
-  gap: 0;
+  @apply p-[24px];
+  @apply gap-[0];
 }
 .booth-app .camera-placeholder h2 {
-  margin: 0 0 12px;
+  @apply [margin:0_0_12px];
   font-size: clamp(24px, 2.5vw, 32px);
-  font-weight: 800;
-  line-height: 1.15;
-  letter-spacing: -0.035em;
-  text-wrap: balance;
+  @apply [font-weight:800];
+  @apply leading-[1.15];
+  @apply [letter-spacing:-0.035em];
+  @apply [text-wrap:balance];
 }
 .booth-app .camera-placeholder p {
-  margin: 0;
-  font-size: 14px;
-  line-height: 1.65;
-  max-width: 38ch;
+  @apply m-[0];
+  @apply text-[14px];
+  @apply leading-[1.65];
+  @apply [max-width:38ch];
 }
 .booth-app .enable-camera {
-  margin-top: 20px;
+  @apply mt-[0];
 }
-.booth-app .capture-sidebar {
-  border: 2px solid var(--ink);
-  border-radius: 10px;
-  padding: 16px;
-  box-shadow: none;
+.booth-app .camera-placeholder h2 + .enable-camera {
+  @apply mt-[20px];
 }
 .booth-app .review-heading {
-  flex-wrap: wrap;
+  @apply flex-wrap;
 }
 .booth-app .review-heading h2 {
-  font-size: 16px;
-  font-weight: 800;
-  line-height: 1.4;
-  letter-spacing: -0.025em;
+  @apply text-[16px];
+  @apply [font-weight:800];
+  @apply leading-[1.4];
+  @apply [letter-spacing:-0.025em];
 }
 .booth-app .review-heading > span {
-  color: var(--muted);
-  line-height: 1.5;
-  font-variant-numeric: tabular-nums;
-}
-.booth-app .capture-slot {
-  border: 2px solid var(--ink);
-  border-radius: 8px;
-}
-.booth-app .capture-slot :is(img, video, .empty-slot) {
-  border: 0;
-  border-radius: 0;
-}
-.booth-app .empty-slot {
-  border: 0;
-  background: var(--surface);
-  color: var(--muted);
-}
-.booth-app .empty-slot > span {
-  font-size: 22px;
-  font-weight: 800;
+  @apply [color:var(--muted)];
+  @apply leading-[1.5];
   font-variant-numeric: tabular-nums;
 }
 .booth-app .capture-continue {
+  margin-top: auto;
   border-top: 2px solid var(--ink);
-  padding-top: 16px;
-  gap: 12px;
+  @apply pt-[16px];
+  @apply gap-[12px];
+}
+.booth-app .capture-back {
+  @apply [align-self:center];
+  @apply [padding:6px_10px];
+}
+.camera-frame-area > .camera-photo-effects {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  z-index: 14;
+}
+.camera-photo-effect-options {
+  @apply absolute;
+  @apply [bottom:calc(100%_+_8px)];
+  @apply [left:0];
+  @apply grid grid-cols-3 gap-2 p-3 rounded-[10px];
+  @apply [width:min(270px,_calc(100cqw_-_24px))] max-h-[45dvh] overflow-auto;
+  @apply [border:1px_solid_var(--ink)] [background:var(--paper)] [box-shadow:3px_3px_0_var(--ink)];
+}
+.camera-photo-effect-options button {
+  @apply grid;
+  @apply justify-items-center content-start text-center rounded-md;
+  @apply gap-[4px];
+  @apply px-1 py-2;
+  @apply [border:0];
+  @apply [background:transparent];
+  @apply [color:var(--ink)];
+  @apply text-[11px];
+  @apply [cursor:pointer];
+}
+.camera-effect-swatch {
+  @apply w-[33px];
+  @apply h-[33px];
+  @apply rounded-[50%];
+  @apply [background:linear-gradient(145deg,_#86b9cc_42%,_#f0b38c_43%_66%,_#586d55_67%)];
+}
+.camera-photo-effect-options button:is(:hover, [aria-pressed='true']) .camera-effect-swatch {
+  outline: 2px solid var(--ink);
+  @apply [outline-offset:2px];
 }
 .booth-app .capture-continue p {
-  font-size: 12px;
-  line-height: 1.65;
-  color: var(--muted);
+  @apply text-[12px];
+  @apply leading-[1.65];
+  @apply [color:var(--muted)];
 }
 .booth-app .button {
-  min-height: 50px;
-  padding: 12px 20px;
-  border: 2px solid var(--ink);
-  border-radius: 10px;
-  background: var(--paper);
-  color: var(--ink);
-  font-size: 15px;
-  font-weight: 800;
-  line-height: 1.5;
-  box-shadow: none;
+  @apply min-h-[50px];
+  @apply [padding:12px_20px];
+  @apply [border:2px_solid_var(--ink)];
+  @apply rounded-[10px];
+  @apply [background:var(--paper)];
+  @apply [color:var(--ink)];
+  @apply text-[15px];
+  @apply [font-weight:800];
+  @apply leading-[1.5];
+  @apply [box-shadow:none];
   transition:
     background-color 180ms var(--ease),
     color 180ms var(--ease);
 }
 .booth-app .capture-next-actions .button {
-  min-height: 50px;
-  padding: 12px;
-  font-size: 14px;
+  @apply min-h-[50px];
+  @apply p-[12px];
+  @apply text-[14px];
 }
 .booth-app .button.enable-camera {
-  min-height: 50px;
-  padding: 12px 20px;
+  @apply min-h-[50px];
+  @apply [padding:12px_20px];
 }
 .booth-app .button:is(:hover, :active):not(:disabled) {
-  background: var(--ink);
-  color: var(--paper);
+  @apply [background:var(--ink)];
+  @apply [color:var(--paper)];
   transform: none;
-  box-shadow: none;
+  @apply [box-shadow:none];
+}
+.booth-app .button.enable-camera:is(:hover, :active) {
+  @apply [background:var(--surface)];
+  @apply [color:var(--ink)];
+}
+.booth-app .button.enable-camera:hover:not(:active) {
+  @apply [box-shadow:3px_3px_0_var(--ink)];
 }
 .booth-app .button:disabled {
-  background: var(--surface);
-  color: var(--muted);
-  border-color: var(--muted);
-  border-style: dashed;
-  opacity: 1;
+  @apply [background:var(--surface)];
+  @apply [color:var(--muted)];
+  @apply [border-color:var(--muted)];
+  @apply [border-style:dashed];
+  @apply [opacity:1];
   transform: none;
-  box-shadow: none;
+  @apply [box-shadow:none];
 }
 .booth-app .camera-tool-toggle {
-  border: 2px solid var(--ink);
-  border-radius: 10px;
-  background: var(--paper);
+  @apply [border:2px_solid_var(--ink)];
+  @apply rounded-[10px];
+  @apply [background:var(--paper)];
   transition: background-color 180ms var(--ease);
 }
 .booth-app .camera-tool-toggle:hover,
 .booth-app .camera-tool[open] > .camera-tool-toggle {
-  background: var(--surface);
+  @apply [background:var(--surface)];
 }
 .booth-app .camera-tool-content {
-  padding: 16px;
-  border: 2px solid var(--ink);
-  border-radius: 10px;
-  background: var(--paper);
-  box-shadow: 6px 6px 0 var(--ink);
+  @apply p-[16px];
+  @apply [border:2px_solid_var(--ink)];
+  @apply rounded-[10px];
+  @apply [background:var(--paper)];
+  @apply [box-shadow:6px_6px_0_var(--ink)];
 }
 .booth-app .camera-tool-content .tools-heading {
-  font-size: 16px;
-  font-weight: 800;
-  line-height: 1.4;
-  letter-spacing: -0.025em;
+  @apply text-[16px];
+  @apply [font-weight:800];
+  @apply leading-[1.4];
+  @apply [letter-spacing:-0.025em];
 }
 .booth-app .camera-tool-content :is(legend, .setting-label) {
-  font-size: 13px;
-  font-weight: 700;
+  @apply text-[13px];
+  @apply [font-weight:700];
 }
 .booth-app :is(.capture-mode, .segmented) {
-  border: 2px solid var(--ink);
-  border-radius: 8px;
+  @apply [border:2px_solid_var(--ink)];
+  @apply rounded-[8px];
 }
 .booth-app :is(.capture-mode, .segmented) button {
-  min-height: 44px;
-  padding: 8px;
-  font-size: 13px;
-  font-weight: 700;
+  @apply min-h-[44px];
+  @apply p-[8px];
+  @apply text-[13px];
+  @apply [font-weight:700];
 }
 .booth-app :is(.capture-mode button.active, .segmented button[aria-pressed='true']) {
-  background: var(--ink);
-  color: var(--paper);
+  @apply [background:var(--ink)];
+  @apply [color:var(--paper)];
 }
 .booth-app .sticker-option {
-  border: 1px solid var(--muted);
-  border-radius: 8px;
+  @apply [border:1px_solid_var(--muted)];
+  @apply rounded-[8px];
 }
 .booth-app .sticker-option.selected {
-  border: 2px solid var(--ink);
-  background: var(--paper);
-  color: var(--ink);
+  @apply [border:2px_solid_var(--ink)];
+  @apply [background:var(--paper)];
+  @apply [color:var(--ink)];
 }
 .booth-app .camera-control .switch::before {
-  border: 2px solid var(--ink);
-  background: var(--paper);
+  @apply [border:2px_solid_var(--ink)];
+  @apply [background:var(--paper)];
 }
 .booth-app .camera-control .switch.on::before {
-  background: var(--ink);
+  @apply [background:var(--ink)];
 }
 .booth-app :is(button, a, select, summary):focus-visible {
   outline: 3px solid var(--ink);
-  outline-offset: 5px;
+  @apply [outline-offset:5px];
 }
 .booth-app :is(.segmented button, .capture-mode button, select):focus-visible {
-  outline-offset: -3px;
+  @apply [outline-offset:-3px];
 }
 .booth-app :is(.segmented button[aria-pressed='true'], .capture-mode button.active):focus-visible,
 .booth-app .shutter-button:focus-visible {
   outline-color: var(--paper);
 }
-.booth-app footer {
-  border-top: 2px solid var(--ink);
-  margin-top: 12px;
-  padding-block: 12px;
-  color: var(--muted);
-  font-size: 12px;
-}
 /* Keep recording feedback and cancellation in one bottom-anchored stack. */
 .booth-app .floating-shutter:has(.recording-status) {
-  gap: 8px;
+  @apply gap-[8px];
 }
 .booth-app .floating-shutter .recording-status {
-  position: static;
+  @apply static;
   transform: none;
-  width: 100%;
-  min-width: 0;
-  box-sizing: border-box;
-  overflow-wrap: anywhere;
+  @apply w-[100%];
+  @apply min-w-[0];
+  @apply [box-sizing:border-box];
+  @apply [overflow-wrap:anywhere];
 }
 .booth-app .floating-shutter .recording-status + .cancel-capture {
-  width: 100%;
+  @apply w-[100%];
 }
 @media (max-width: 800px) {
-  .booth-app :is(.workflow-brand-row, .capture-main, footer) {
-    width: calc(100% - 48px);
+  .booth-app .capture-main {
+    @apply [width:calc(100%_-_48px)];
   }
 }
 @media (max-width: 600px) {
-  .booth-app :is(.workflow-brand-row, .capture-main, footer) {
-    width: calc(100% - 32px);
-  }
-  .booth-app .workflow-nav li a,
-  .booth-app .step-unavailable {
-    gap: 6px;
-    padding-inline: 2px;
-    font-size: 11px;
-  }
-  .booth-app .step-number {
-    width: 28px;
-    height: 28px;
-    font-size: 12px;
+  .booth-app .capture-main {
+    @apply [width:calc(100%_-_32px)];
   }
   .booth-app .panel-title {
-    font-size: 16px;
+    @apply text-[16px];
   }
   .booth-app .camera-placeholder {
-    padding: 16px;
+    @apply p-[16px];
   }
   .booth-app .camera-placeholder h2 {
-    font-size: 24px;
+    @apply text-[24px];
   }
   .booth-app .camera-placeholder p {
-    font-size: 12px;
+    @apply text-[12px];
   }
   .booth-app .camera-tool-content {
-    padding: 12px;
+    @apply p-[12px];
   }
 }
 @media (prefers-reduced-motion: reduce) {
   .booth-app :is(.button, .camera-tool-toggle) {
     transition: none;
   }
+}
+.capture-pose-prompt {
+  position: absolute;
+  z-index: 15;
+  top: 12px;
+  right: 12px;
+  width: max-content;
+  max-width: min(250px, 58%);
+  padding: 3px 5px 5px;
+  border: 1px solid #ffffff70;
+  border-radius: 8px;
+  background: #111d;
+  color: white;
+  font-size: 12px;
+  line-height: 1.35;
+}
+.capture-pose-prompt summary {
+  cursor: pointer;
+  min-height: 28px;
+  padding: 4px 2px;
+  font-weight: 800;
+}
+.capture-pose-prompt img {
+  display: block;
+  margin: 0 auto;
+  max-width: 100%;
+  height: auto;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: 4px;
 }

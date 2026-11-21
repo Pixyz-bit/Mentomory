@@ -1,131 +1,131 @@
 .selection-layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 320px;
-  gap: 18px;
-  flex: 1;
-  min-height: 0;
+  @apply grid;
+  @apply [grid-template-columns:minmax(0,_1fr)_320px];
+  @apply gap-[18px];
+  @apply [flex:1];
+  @apply min-h-[0];
 }
 .template-catalog {
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  padding: 18px;
+  @apply flex;
+  @apply flex-col;
+  @apply min-h-[0];
+  @apply p-[18px];
 }
 .catalog-heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 12px;
+  @apply flex;
+  @apply items-center;
+  @apply justify-between;
+  @apply gap-[12px];
+  @apply mb-[12px];
 }
 .catalog-heading h2,
 .selection-summary h2 {
-  margin: 0;
-  font-size: 19px;
-  letter-spacing: -0.02em;
+  @apply m-[0];
+  @apply text-[19px];
+  @apply [letter-spacing:-0.02em];
 }
 .catalog-heading > span {
-  font-size: 12px;
+  @apply text-[12px];
 }
 .template-choices {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  grid-auto-rows: 100px;
-  align-content: start;
-  gap: 10px;
-  overflow: auto;
-  min-height: 0;
-  padding: 4px;
-  flex: 1;
-  overscroll-behavior: contain;
+  @apply grid;
+  @apply [grid-template-columns:repeat(3,_minmax(0,_1fr))];
+  @apply [grid-auto-rows:100px];
+  @apply [align-content:start];
+  @apply gap-[10px];
+  @apply overflow-auto;
+  @apply min-h-[0];
+  @apply p-[4px];
+  @apply [flex:1];
+  @apply [overscroll-behavior:contain];
 }
 .template-choice {
   --mini-photo: #fff;
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 12px;
-  position: relative;
-  min-width: 0;
-  border: 2px solid #000;
-  background: #fff;
-  border-radius: 2px;
-  text-align: left;
+  @apply flex;
+  @apply items-center;
+  @apply gap-[14px];
+  @apply p-[12px];
+  @apply relative;
+  @apply min-w-[0];
+  @apply [border:2px_solid_#000];
+  @apply [background:#fff];
+  @apply rounded-[2px];
+  @apply text-left;
 }
 .template-choice:hover:not(:disabled),
 .template-choice.selected {
-  background: #000;
-  color: #fff;
+  @apply [background:#000];
+  @apply [color:#fff];
   --mini-photo: #000;
 }
 .template-choice .template-mini {
-  width: 42px;
-  height: 64px;
-  flex-shrink: 0;
+  @apply w-[42px];
+  @apply h-[64px];
+  @apply [flex-shrink:0];
 }
 .choice-copy {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  min-width: 0;
+  @apply flex;
+  @apply flex-col;
+  @apply gap-[6px];
+  @apply min-w-[0];
 }
 .choice-copy strong {
-  font-size: 13px;
-  line-height: 1.3;
+  @apply text-[13px];
+  @apply leading-[1.3];
 }
 .choice-copy > span {
-  font-size: 11px;
+  @apply text-[11px];
 }
 .choice-check {
-  position: absolute;
-  right: 7px;
-  top: 7px;
+  @apply absolute;
+  @apply [right:7px];
+  @apply [top:7px];
 }
 .template-choice:disabled {
-  opacity: 1;
+  @apply [opacity:1];
 }
 .template-choice:disabled:not(.selected) {
-  opacity: 0.5;
+  @apply [opacity:0.5];
 }
 .selection-summary {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  text-align: center;
-  padding: 20px;
-  min-height: 0;
-  gap: 10px;
+  @apply flex;
+  @apply flex-col;
+  @apply items-stretch;
+  @apply text-center;
+  @apply p-[20px];
+  @apply min-h-[0];
+  @apply gap-[10px];
 }
 .selection-summary > p {
-  margin: 0;
-  font-size: 13px;
-  line-height: 1.5;
+  @apply m-[0];
+  @apply text-[13px];
+  @apply leading-[1.5];
 }
 .selection-stage {
   --mini-photo: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex: 1;
-  min-height: 100px;
-  padding: 16px;
-  overflow: hidden;
+  @apply flex;
+  @apply items-center;
+  @apply justify-center;
+  @apply [flex:1];
+  @apply min-h-[100px];
+  @apply p-[16px];
+  @apply overflow-hidden;
 }
 .selection-stage .template-mini {
-  width: 100%;
-  height: 100%;
-  max-height: 310px;
+  @apply w-[100%];
+  @apply h-[100%];
+  @apply max-h-[310px];
 }
 .selection-summary .selection-note {
-  font-size: 12px;
-  margin-bottom: 6px;
+  @apply text-[12px];
+  @apply mb-[6px];
 }
 .selection-summary .button {
-  width: 100%;
-  font-size: 14px;
+  @apply w-[100%];
+  @apply text-[14px];
 }
 @media (min-width: 1200px) {
   .template-choices {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    @apply [grid-template-columns:repeat(4,_minmax(0,_1fr))];
   }
 }

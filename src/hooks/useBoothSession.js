@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { templates } from '../data/templates.js';
-import { supportsMp4 } from '../lib/media/live-media.js';
+import { LIVE_SECONDS, motionStyles, supportsMp4 } from '../lib/media/live-media.js';
 import { useFaceStickers } from './useFaceStickers.js';
+import useBackgroundBlur from './useBackgroundBlur.js';
 import useCamera from './useCamera.js';
 import usePhotoCapture from './usePhotoCapture.js';
 import useWorkflow from './useWorkflow.js';
-import { navigate } from '../lib/navigation.js';
-// Session ownership stays above the pages so breadcrumb navigation retains captures.
+// The session survives navigation between capture and the editor.
 export default function useBoothSession() {
   const video = useRef(null);
   const overlay = useRef(null);
@@ -15,9 +15,12 @@ export default function useBoothSession() {
   const timer = useRef(null);
   const sequence = useRef(false);
   const [autoCapture, setAutoCapture] = useState(false);
+  const [autoStart, setAutoStart] = useState(true);
   const shotUrls = useRef([]);
   const recording = useRef(null);
   const [shots, setShots] = useState([]);
+  const [posePrompts, setPosePrompts] = useState([]);
+  const [reviewShotIndex, setReviewShotIndex] = useState(null);
   const [retakeIndex, setRetakeIndex] = useState(null);
   const [templateId, setTemplateId] = useState(null);
   const [layoutChosen, setLayoutChosen] = useState(false);
@@ -25,8 +28,6 @@ export default function useBoothSession() {
   const template = templates.find((item) => item.id === templateId);
   const [status, setStatus] = useState('idle');
   const [error, setError] = useState('');
-  const [devices, setDevices] = useState([]);
-  const [deviceId, setDeviceId] = useState('');
   const [mirror, setMirror] = useState(true);
   const [selectedDelay, setSelectedDelay] = useState(3);
   const delay = [0, 3, 5].includes(selectedDelay) ? selectedDelay : 3;
@@ -34,7 +35,15 @@ export default function useBoothSession() {
   const [countdown, setCountdown] = useState(null);
   const [flash, setFlash] = useState(false);
   const [sticker, setSticker] = useState('none');
+  const [photoEffect, setPhotoEffect] = useState('none');
   const [mode, setMode] = useState('photo');
+  const [motionStyle, setMotionStyle] = useState('standard');
+  const [boomerangSeconds, setBoomerangSeconds] = useState(motionStyles.boomerang.seconds);
+  const motion =
+    motionStyle === 'boomerang'
+      ? { ...motionStyles.boomerang, seconds: boomerangSeconds }
+      : motionStyles[motionStyle];
+  const recordingSeconds = motion?.seconds ?? LIVE_SECONDS;
   const [mp4Supported, setMp4Supported] = useState(null);
   const [recordProgress, setRecordProgress] = useState(0);
   const completed = Boolean(template && shots.length === template.count && retakeIndex === null);
@@ -48,23 +57,45 @@ export default function useBoothSession() {
     cancelCountdown,
     setError,
     setStatus,
-    setDeviceId,
-    setDevices,
     setRecordProgress,
   });
-  const { page, setPage } = useWorkflow({
+  const page = useWorkflow({
     completed,
     layoutChosen,
-    onLeaveCapture() {
+    onLeaveCapture(next) {
+      setReviewShotIndex(null);
       requestId.current++;
       recording.current?.abort();
       cancelCountdown();
       releaseCamera();
       setFlash(false);
       setRecordProgress(0);
-      setStatus(completed ? 'review' : 'idle');
+      setStatus(next !== 'templates' && completed ? 'review' : 'idle');
+      if (next === 'templates') {
+        shotUrls.current.forEach((url) => URL.revokeObjectURL(url));
+        shotUrls.current = [];
+        setShots((current) => (current.length ? [] : current));
+        setPosePrompts((current) => (current.length ? [] : current));
+        setLayoutChosen(false);
+        setTemplateId(null);
+        setRetakeIndex(null);
+        setEditorSettings(null);
+        setMode('photo');
+        setMotionStyle('standard');
+        setBoomerangSeconds(motionStyles.boomerang.seconds);
+        setError('');
+        setMirror(true);
+        setSelectedDelay(3);
+        setAutoStart(true);
+        setSticker('none');
+        setPhotoEffect('none');
+      }
     },
   });
+  const backgroundBlur = useBackgroundBlur(
+    video,
+    photoEffect === 'background-blur' && cameraActive && page === 'booth'
+  );
   const face = useFaceStickers(video, overlay, cameraActive && page === 'booth', sticker);
   const stickerReady = sticker === 'none' || face.state === 'tracking';
   useEffect(() => {
@@ -94,9 +125,13 @@ export default function useBoothSession() {
     shots,
     sequence,
     setAutoCapture,
+    autoStart,
     template,
     mode,
+    motion,
     mirror,
+    photoEffect,
+    backgroundBlur,
     delay,
     sticker,
     face,
@@ -111,6 +146,7 @@ export default function useBoothSession() {
     setStatus,
     setRecordProgress,
     setShots,
+    onReviewShot: setReviewShotIndex,
     setFlash,
     setCountdown,
   });
@@ -128,26 +164,7 @@ export default function useBoothSession() {
     setFlash(false);
     setError('');
     setRecordProgress(0);
-    openCamera(deviceId);
-  }
-  function retake() {
-    requestId.current++;
-    recording.current?.abort();
-    cancelCountdown();
-    releaseCamera();
-    navigate('/templates');
-    setPage('templates');
-    setLayoutChosen(false);
-    setTemplateId(null);
-    shotUrls.current.forEach((url) => URL.revokeObjectURL(url));
-    shotUrls.current = [];
-    setShots([]);
-    setRetakeIndex(null);
-    setEditorSettings(null);
-    setStatus('idle');
-    setFlash(false);
-    setError('');
-    setRecordProgress(0);
+    openCamera();
   }
   function retakePhoto(index) {
     if (busy || !shots[index]) return;
@@ -155,7 +172,7 @@ export default function useBoothSession() {
     setRetakeIndex(index);
     setError('');
     if (stream.current?.active) setStatus('ready');
-    else openCamera(deviceId);
+    else openCamera();
   }
   function cancelRetake() {
     if (busy) return;
@@ -164,13 +181,25 @@ export default function useBoothSession() {
     setError('');
     setStatus(shots.length === template.count ? 'review' : 'idle');
   }
+  function acceptUploadedShots(uploadedShots) {
+    shotUrls.current.push(...uploadedShots.map(({ url }) => url));
+    setShots(uploadedShots);
+    setStatus('review');
+  }
   const busy =
     autoCapture || countdown !== null || ['loading', 'saving', 'recording'].includes(status);
   const reviewing = status === 'review';
   const templateLocked = busy || shots.length > 0;
   return {
     shots,
+    posePrompts,
+    setPosePrompts,
+    reviewShotIndex,
+    setReviewShotIndex,
+    acceptUploadedShots,
     autoCapture,
+    autoStart,
+    setAutoStart,
     redoAll,
     retakeIndex,
     retakePhoto,
@@ -184,8 +213,6 @@ export default function useBoothSession() {
     setEditorSettings,
     status,
     error,
-    devices,
-    deviceId,
     mirror,
     setMirror,
     delay,
@@ -194,9 +221,26 @@ export default function useBoothSession() {
     flash,
     sticker,
     setSticker,
+    photoEffect,
+    backgroundBlur,
+    setPhotoEffect,
     page,
     mode,
     setMode,
+    motionStyle,
+    setMotionStyle,
+    recordingSeconds,
+    setRecordingSeconds(seconds) {
+      if (
+        motionStyle === 'boomerang' &&
+        !templateLocked &&
+        seconds >= 1 &&
+        seconds <= 5 &&
+        Number.isInteger(seconds * 4)
+      ) {
+        setBoomerangSeconds(seconds);
+      }
+    },
     mp4Supported,
     recordProgress,
     completed,
@@ -212,6 +256,5 @@ export default function useBoothSession() {
     stopCamera,
     cancelCountdown,
     takePhoto,
-    retake,
   };
 }

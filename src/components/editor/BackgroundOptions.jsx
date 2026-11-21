@@ -14,11 +14,6 @@ export default function BackgroundOptions({
         <span>Background design · {backgrounds.length}</span>
         <Chevron />
       </summary>
-      {frame !== 'none' && (
-        <p className="background-frame-note">
-          Your frame supplies its paper. Selecting a background removes the frame.
-        </p>
-      )}
       <div className="background-options">
         {backgrounds.map((item) => (
           <button

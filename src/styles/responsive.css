@@ -5,10 +5,10 @@
   --safe-right: max(var(--page-gutter), env(safe-area-inset-right, 0px));
 }
 .app :is(.workflow-brand-row, .template-main, .capture-main, .editor-main) {
-  width: min(1216px, calc(100% - var(--safe-left) - var(--safe-right)));
+  @apply [width:min(1216px,_calc(100%_-_var(--safe-left)_-_var(--safe-right)))];
 }
 .home-app .landing-section-inner {
-  width: min(1200px, calc(100% - var(--safe-left) - var(--safe-right)));
+  @apply [width:min(1200px,_calc(100%_-_var(--safe-left)_-_var(--safe-right)))];
 }
 .app .workflow-header {
   padding-top: env(safe-area-inset-top, 0px);
@@ -22,35 +22,35 @@
     .editor-download-area,
     .editor-tool-panel
   ) {
-  min-width: 0;
+  @apply min-w-[0];
 }
 .app .button {
-  white-space: normal;
-  text-align: center;
+  @apply [white-space:normal];
+  @apply text-center;
 }
 .app .selection-actions {
-  flex-wrap: wrap;
+  @apply flex-wrap;
 }
 .app .selection-actionbar strong {
-  overflow-wrap: anywhere;
+  @apply [overflow-wrap:anywhere];
 }
 .app .app-dialog {
   max-height: calc(
     100dvh - 32px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)
   );
-  overscroll-behavior: contain;
+  @apply [overscroll-behavior:contain];
 }
 .home-app .landing-hero {
   padding-top: calc(20px + env(safe-area-inset-top, 0px));
   padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
 }
 .home-app .showcase-strip {
-  min-width: 0;
-  grid-template-columns: minmax(0, 1fr);
+  @apply min-w-[0];
+  @apply [grid-template-columns:minmax(0,_1fr)];
 }
 .home-app .showcase-strip .sample-photo {
-  min-width: 0;
-  width: 100%;
+  @apply min-w-[0];
+  @apply w-[100%];
 }
 .home-app .showcase-strip > span {
   font-size: clamp(7px, calc(var(--print-size) * 0.04), 10px);
@@ -60,20 +60,20 @@
 }
 @media (max-width: 1000px) {
   .editor-app .editor-layout {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 24px;
+    @apply [grid-template-columns:minmax(0,_1fr)];
+    @apply gap-[24px];
   }
   .editor-app .editor-artifact {
-    position: static;
+    @apply static;
   }
   .editor-app .editor-controls {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
+    @apply grid;
+    @apply [grid-template-columns:minmax(0,_1fr)];
     align-items: start;
-    gap: 24px;
+    @apply gap-[24px];
   }
   .editor-app .editor-stage {
-    height: clamp(280px, 50svh, 480px);
+    @apply [height:clamp(280px,_50svh,_480px)];
   }
 }
 @media (max-width: 800px) {
@@ -83,115 +83,108 @@
 }
 @media (max-width: 899px), (max-height: 419px) {
   .booth-app .capture-sidebar {
-    position: static;
-    height: auto;
-    max-height: none;
-    min-height: 0;
+    @apply static;
+    @apply [height:auto];
+    @apply [max-height:none];
+    @apply min-h-[0];
   }
   .booth-app .capture-review-scroll {
-    flex: none;
-    overflow: visible;
+    @apply [flex:none];
+    @apply overflow-visible;
   }
-  .booth-app .capture-review {
-    min-height: 0;
-  }
-  .booth-app .capture-gallery {
-    flex: none;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 140px), 1fr));
-    padding-block: 16px;
-  }
+
   .booth-app .booth-bar {
-    height: auto;
-    min-height: 52px;
-    flex-wrap: wrap;
-    row-gap: 8px;
-    padding-block: 4px 8px;
+    @apply [height:auto];
+    @apply min-h-[52px];
+    @apply flex-wrap;
+    @apply gap-y-[8px];
+    @apply [padding-block:4px_8px];
   }
   /* On narrow screens, open tools expand below the preview instead of covering it. */
   .booth-app .camera-frame-area {
     --preview-height: 56.25cqw;
-    aspect-ratio: auto;
+    @apply [aspect-ratio:auto];
   }
   .booth-app .viewfinder {
-    position: relative;
-    inset: auto;
-    height: auto;
-    aspect-ratio: 16 / 9;
+    @apply relative;
+    @apply [inset:auto];
+    @apply [height:auto];
+    @apply [aspect-ratio:16_/_9];
   }
   .booth-app .camera-tools.capture-tools {
-    position: static;
-    inset: auto;
-    height: auto;
+    @apply static;
+    @apply [inset:auto];
+    @apply [height:auto];
   }
   .booth-app .camera-tools > .camera-tool {
-    position: static;
-    width: auto;
-    pointer-events: none;
+    @apply static;
+    @apply [width:auto];
+    @apply pointer-events-none;
   }
   .booth-app .camera-tool-toggle {
-    position: absolute;
-    top: calc(var(--preview-height) - 64px);
-    bottom: auto;
-    pointer-events: auto;
-    z-index: 13;
+    @apply absolute;
+    @apply [top:calc(var(--preview-height)_-_64px)];
+    @apply [bottom:auto];
+    @apply pointer-events-auto;
+    @apply [z-index:13];
   }
   .booth-app .camera-tool-stickers > .camera-tool-toggle {
-    left: 16px;
+    @apply [left:16px];
   }
   .booth-app .camera-tool-settings > .camera-tool-toggle {
-    right: 16px;
+    @apply [right:16px];
   }
   .booth-app .camera-tool-content {
-    position: relative;
-    inset: auto;
-    width: 100%;
-    max-height: min(60dvh, 480px);
-    margin-top: 12px;
-    pointer-events: auto;
-    box-shadow: none;
-    overscroll-behavior: contain;
+    @apply relative;
+    @apply [inset:auto];
+    @apply w-[100%];
+    @apply [max-height:min(60dvh,_480px)];
+    @apply mt-[12px];
+    @apply pointer-events-auto;
+    @apply [box-shadow:none];
+    @apply [overscroll-behavior:contain];
   }
   .booth-app .floating-shutter {
-    top: calc(var(--preview-height) - 12px);
-    bottom: auto;
-    width: min(240px, calc(100% - 144px));
+    @apply [top:calc(var(--preview-height)_-_12px)];
+    @apply [bottom:auto];
+    @apply [width:min(240px,_calc(100%_-_144px))];
     transform: translate(-50%, -100%);
   }
   .booth-app .floating-shutter .cancel-capture {
-    width: 100%;
-    min-height: 48px;
-    padding: 10px 8px;
-    font-size: 14px;
+    @apply w-[100%];
+    @apply min-h-[48px];
+    @apply [padding:10px_8px];
+    @apply text-[14px];
   }
   .booth-app .camera-control .switch {
-    width: 44px;
-    height: 44px;
-    min-height: 44px;
+    @apply w-[44px];
+    @apply h-[44px];
+    @apply min-h-[44px];
   }
   .booth-app .camera-tool-settings .mirror-row .switch {
-    position: relative;
-    width: 44px;
-    height: 44px;
-    min-height: 44px;
-    padding: 3px;
-    border: 0;
-    background: transparent;
+    @apply relative;
+    @apply w-[44px];
+    @apply h-[44px];
+    @apply min-h-[44px];
+    @apply p-[3px];
+    @apply [border:0];
+    @apply [background:transparent];
   }
   .booth-app .camera-tool-settings .mirror-row .switch::before {
     content: '';
-    position: absolute;
-    inset: 50% 0 auto;
+    @apply absolute;
+    @apply [inset:50%_0_auto];
     transform: translateY(-50%);
-    height: 28px;
-    border: 2px solid var(--ink);
-    border-radius: 16px;
-    background: var(--paper);
+    @apply h-[28px];
+    @apply [border:2px_solid_var(--ink)];
+    @apply rounded-[16px];
+    @apply [background:var(--paper)];
   }
   .booth-app .camera-tool-settings .mirror-row .switch.on::before {
-    background: var(--ink);
+    @apply [background:var(--ink)];
   }
   .booth-app .camera-tool-settings .mirror-row .switch span {
-    position: relative;
+    @apply relative;
   }
 }
 @media (max-width: 700px) {
@@ -199,8 +192,8 @@
     --page-gutter: 16px;
   }
   .editor-app .editor-controls {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 20px;
+    @apply [grid-template-columns:minmax(0,_1fr)];
+    @apply gap-[20px];
   }
 }
 @media (max-width: 600px) {
@@ -208,146 +201,145 @@
     --page-gutter: 16px;
   }
   .app .workflow-brand-row {
-    padding-block: 8px;
-    row-gap: 4px;
+    @apply [padding-block:8px];
+    @apply gap-y-[4px];
   }
   .app .workflow-nav ol {
-    width: 100%;
-    gap: 8px;
+    @apply w-[100%];
+    @apply gap-[8px];
   }
   .app .workflow-nav li a,
   .app .step-unavailable {
-    min-height: 48px;
-    font-size: 11px;
-    padding-inline: 2px;
+    @apply min-h-[48px];
+    @apply text-[11px];
+    @apply [padding-inline:2px];
   }
   .app .workflow-home {
-    min-height: 44px;
-    display: flex;
-    align-items: center;
+    @apply min-h-[44px];
+    @apply flex;
+    @apply items-center;
   }
   .templates-app .template-count-filter select,
   .booth-app .camera-tool-settings select,
   .editor-app :is(input, select) {
-    font-size: 16px;
+    @apply text-[16px];
   }
   .templates-app .template-choices,
   .templates-app .template-choices[data-filtered='true'] {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-auto-rows: auto;
-    align-items: stretch;
+    @apply grid;
+    @apply [grid-template-columns:repeat(2,_minmax(0,_1fr))];
+    @apply [grid-auto-rows:auto];
+    @apply items-stretch;
     gap: 16px 12px;
-    padding: 4px 6px 8px 0;
+    @apply [padding:4px_6px_8px_0];
   }
   .templates-app .template-choices > .template-choice {
-    display: grid;
-    grid-template-rows: auto 1fr;
-    align-items: stretch;
-    gap: 12px;
-    padding: 10px;
-    margin-bottom: 0;
+    @apply grid;
+    @apply [grid-template-rows:auto_1fr];
+    @apply items-stretch;
+    @apply gap-[12px];
+    @apply p-[10px];
+    @apply mb-[0];
   }
   .templates-app .template-choices .choice-preview {
-    aspect-ratio: auto;
-    height: clamp(144px, 42vw, 188px);
-    min-height: 0;
-    max-height: none;
-    padding: 10px;
+    @apply [aspect-ratio:auto];
+    @apply [height:clamp(144px,_42vw,_188px)];
+    @apply min-h-[0];
+    @apply [max-height:none];
+    @apply p-[10px];
   }
   .templates-app .template-choices .choice-copy {
-    justify-content: space-between;
-    gap: 4px;
+    @apply justify-between;
+    @apply gap-[4px];
   }
   .templates-app .template-choices .choice-copy strong {
-    display: flex;
-    align-items: flex-end;
-    min-height: 2.8em;
-    font-size: 14px;
-    line-height: 1.4;
-    overflow-wrap: anywhere;
+    @apply flex;
+    @apply items-end;
+    @apply min-h-[2.8em];
+    @apply text-[14px];
+    @apply leading-[1.4];
+    @apply [overflow-wrap:anywhere];
   }
   .templates-app .template-choices > .template-choice:not(.selected):hover:not(:disabled) {
     transform: none;
-    box-shadow: none;
+    @apply [box-shadow:none];
   }
   .templates-app .template-choices > .template-choice.selected {
     transform: none;
-    box-shadow: 3px 3px 0 var(--ink);
+    @apply [box-shadow:3px_3px_0_var(--ink)];
   }
   .templates-app .selection-actionbar {
-    bottom: calc(8px + env(safe-area-inset-bottom, 0px));
-    padding: 12px;
-    gap: 12px;
+    @apply [bottom:calc(8px_+_env(safe-area-inset-bottom,_0px))];
+    @apply p-[12px];
+    @apply gap-[12px];
   }
   .templates-app .selection-actions {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    gap: 8px;
+    @apply grid;
+    @apply [grid-template-columns:minmax(0,_1fr)];
+    @apply gap-[8px];
   }
   .templates-app .selection-actions > :is(.button, .text-button) {
-    width: 100%;
+    @apply w-[100%];
   }
   .booth-app .camera-frame-area {
-    --preview-height: 80cqw;
+    --preview-height: clamp(92cqw, calc(100svh - 213px), 140cqw);
   }
   .booth-app .viewfinder {
-    aspect-ratio: 5 / 4;
+    height: var(--preview-height);
+    aspect-ratio: auto;
   }
   .booth-app .camera-tool-toggle {
-    width: 44px;
-    height: 44px;
-    top: calc(var(--preview-height) - 56px);
+    @apply w-[44px];
+    @apply h-[44px];
+    @apply [top:calc(var(--preview-height)_-_56px)];
   }
   .booth-app .floating-shutter {
-    width: min(240px, calc(100% - 136px));
+    @apply [width:min(240px,_calc(100%_-_136px))];
   }
-  .booth-app .capture-gallery {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
+
   .editor-app .editor-stage {
-    height: clamp(260px, 48svh, 420px);
-    padding: 12px;
+    @apply [height:clamp(260px,_48svh,_420px)];
+    @apply p-[12px];
   }
   .editor-app .editor-intro {
-    gap: 12px;
+    @apply gap-[12px];
   }
   .editor-app .editor-tabs button {
-    min-height: 48px;
+    @apply min-h-[48px];
   }
   .editor-app :is(.frame-options, .background-options, .filter-options, .decoration-options) {
-    gap: 10px;
+    @apply gap-[10px];
   }
   .app .dialog-actions {
-    flex-direction: column;
+    @apply flex-col;
   }
   .app .dialog-actions .button {
-    width: 100%;
+    @apply w-[100%];
   }
 }
 @media (max-width: 360px) {
-  .home-app .landing-copy h1 {
+  :is(.home-app .landing-copy, .templates-app .intro, .booth-app .capture-intro) h1 {
     font-size: clamp(32px, 6svh, 40px);
   }
-  .home-app .landing-copy .brand-logo {
-    width: 180px;
+  :is(.home-app .landing-copy, .templates-app .intro, .booth-app .capture-intro, .editor-app .editor-brand-header) .brand-logo {
+    @apply w-[180px];
   }
   .home-app .landing-showcase {
     --print-size: min(calc((100cqh - 36px) / 1.31), calc((100cqw - 20px) / 1.32));
   }
   .editor-app :is(.frame-options, .background-options, .filter-options, .decoration-options) {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    @apply [grid-template-columns:repeat(2,_minmax(0,_1fr))];
   }
 }
 @media (hover: none) {
   .app .text-button:not(:disabled) {
-    min-height: 44px;
+    @apply min-h-[44px];
   }
 }
 
 /* Center the landing entry label. */
 .home-app .landing-capture.button-dark {
-  justify-content: center;
+  @apply justify-center;
 }
 
 /* Balanced spacing around the formats ribbon. */
@@ -364,6 +356,83 @@
   .home-app {
     --ribbon-gap: 28px;
   }
+
+  .home-app .landing-hero {
+    height: auto;
+    min-height: 90svh;
+    gap: clamp(10px, 3vw, 16px);
+  }
+
+  .home-app .landing-formats {
+    min-height: 10svh;
+  }
+
+  .home-app .landing-copy {
+    padding-inline: 10px;
+  }
+
+  .home-app .landing-copy > .wordmark {
+    margin-bottom: 22px;
+  }
+
+  .home-app .landing-copy h1 {
+    margin-bottom: 12px;
+    font-size: clamp(2rem, 1.3rem + 4vw, 2.5rem);
+  }
+
+  .home-app .landing-copy > p {
+    max-width: 34ch;
+    margin: 0 auto 12px;
+    font-size: clamp(0.875rem, 0.8rem + 0.3vw, 0.95rem);
+    text-wrap: pretty;
+  }
+
+  .home-app .landing-capture.button-dark {
+    min-height: 46px;
+    padding-block: 8px;
+    font-size: 0.875rem;
+  }
+
+  .home-app .landing-privacy {
+    margin-top: 6px;
+  }
+
+  .home-app .landing-art-stage {
+    flex: 1 0 clamp(200px, 64vw, 300px);
+    place-items: center;
+  }
+
+  .home-app .landing-showcase {
+    --print-size: min(calc((100cqh - 32px) / 1.31), calc((100cqw - 20px) / 1.32), 210px);
+    padding-bottom: 0;
+  }
+
+  .home-app .landing-how {
+    padding-bottom: 36px;
+  }
+
+  .home-app .landing-how-heading {
+    margin-bottom: 16px;
+  }
+
+  .home-app .landing-how h2 {
+    font-size: clamp(1.5rem, 1rem + 2.5vw, 2rem);
+  }
+
+  .home-app .landing-how-steps {
+    gap: 20px;
+  }
+
+  .home-app .landing-how-artwork {
+    height: clamp(125px, 40vw, 180px);
+    grid-template-rows: minmax(0, 1fr);
+    margin-bottom: 8px;
+  }
+
+  .home-app .landing-how-step h3 {
+    margin-bottom: 6px;
+    font-size: 1.125rem;
+  }
 }
 
 /* Mobile camera tools: icon-only toggles and one open panel at a time. */
@@ -372,35 +441,35 @@
     --mobile-tool-width: 48px;
   }
   .booth-app .floating-shutter {
-    width: min(240px, calc(100% - var(--mobile-tool-width) - var(--mobile-tool-width) - 48px));
+    @apply [width:min(240px,_calc(100%_-_var(--mobile-tool-width)_-_var(--mobile-tool-width)_-_48px))];
   }
   .booth-app .camera-tool-toggle {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: var(--mobile-tool-width);
-    height: var(--mobile-tool-width);
-    top: calc(var(--preview-height) - var(--mobile-tool-width) - 12px);
-    padding: 0;
-    color: var(--ink);
+    @apply flex;
+    @apply items-center;
+    @apply justify-center;
+    @apply [width:var(--mobile-tool-width)];
+    @apply [height:var(--mobile-tool-width)];
+    @apply [top:calc(var(--preview-height)_-_var(--mobile-tool-width)_-_12px)];
+    @apply p-[0];
+    @apply [color:var(--ink)];
   }
   .booth-app .camera-tool[open] > .camera-tool-toggle {
-    background: var(--ink);
-    color: var(--paper);
+    @apply [background:var(--ink)];
+    @apply [color:var(--paper)];
   }
   .booth-app .camera-tool[open] > .camera-tool-toggle .provided-icon {
     filter: brightness(0) invert(1);
   }
   .booth-app .camera-tool[open] > .camera-tool-toggle:focus-visible {
     outline-color: var(--paper);
-    outline-offset: -4px;
+    @apply [outline-offset:-4px];
   }
   .booth-app .camera-tool-content {
-    min-height: 0;
-    max-height: min(50dvh, 360px);
-    overflow-x: hidden;
-    overflow-y: auto;
-    touch-action: pan-y pinch-zoom;
+    @apply min-h-[0];
+    @apply [max-height:min(50dvh,_360px)];
+    @apply [overflow-x:hidden];
+    @apply [overflow-y:auto];
+    @apply [touch-action:pan-y_pinch-zoom];
     -webkit-overflow-scrolling: touch;
     overscroll-behavior-y: contain;
     scrollbar-gutter: stable;
@@ -410,8 +479,8 @@
     overscroll-behavior-y: auto;
   }
   .booth-app .camera-tool-content > :is(.settings-panel, .sticker-panel) {
-    pointer-events: auto;
-    touch-action: pan-y pinch-zoom;
+    @apply pointer-events-auto;
+    @apply [touch-action:pan-y_pinch-zoom];
   }
 }
 @media (max-width: 600px) {
@@ -422,84 +491,458 @@
 
 /* Scroll tool content on every screen; keep tabs and download actions outside it. */
 .editor-app .editor-tool-panel {
-  max-height: min(48dvh, 420px);
-  min-height: 0;
-  overflow-y: auto;
-  overflow-x: hidden;
-  touch-action: pan-y pinch-zoom;
+  @apply [max-height:min(48dvh,_420px)];
+  @apply min-h-[0];
+  @apply px-1.5 py-2;
+  @apply [overflow-y:auto];
+  @apply [overflow-x:hidden];
+  @apply [touch-action:pan-y_pinch-zoom];
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-y: auto;
   scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: #a1a1aa transparent;
 }
 .editor-app .editor-tool-panel:focus-visible {
   outline: 3px solid var(--ink);
-  outline-offset: -4px;
+  @apply [outline-offset:-4px];
 }
 /* Let the preview establish the row height; the active tool fills the controls column. */
 @media (min-width: 1001px) {
   .editor-app .editor-controls {
-    align-self: stretch;
+    @apply [align-self:stretch];
     contain: size;
-    min-height: 0;
+    @apply min-h-[0];
   }
   .editor-app .editor-options {
-    flex: 1 1 0;
-    min-height: 0;
+    @apply [flex:1_1_0];
+    @apply min-h-[0];
   }
   .editor-app :is(.editor-tabs, .editor-download-area, .editor-error) {
-    flex-shrink: 0;
+    @apply [flex-shrink:0];
   }
   .editor-app .editor-tool-panel {
-    flex: 1 1 0;
-    max-height: none;
-    min-height: 0;
+    @apply [flex:1_1_0];
+    @apply [max-height:none];
+    @apply min-h-[0];
   }
 }
 
 /* Give the tool list the space freed by a compact download section. */
 .editor-app .editor-download-area {
-  padding-block: 16px;
+  @apply p-0;
 }
 .editor-app .editor-actions {
-  gap: 8px;
+  @apply gap-[8px];
 }
 .editor-app .editor-controls {
-  gap: 16px;
+  @apply gap-[16px];
 }
 
 /* Keep the image visible while the rest of the mobile editor scrolls below it. */
 @media (max-width: 700px), (max-width: 1000px) and (max-height: 419px) {
   html:has(.editor-app) {
-    scroll-padding-top: calc(min(46dvh, 400px) + 24px + env(safe-area-inset-top, 0px));
+    --editor-preview-height: min(46svh, 400px);
+    --editor-preview-top: env(safe-area-inset-top, 0px);
+    scroll-padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px));
+    scroll-padding-top: calc(var(--editor-preview-height) + var(--editor-preview-top) + 60px);
   }
+  .app.editor-app .editor-main {
+    padding-bottom: 0;
+  }
+
   .editor-app .editor-layout {
-    gap: 16px;
+    row-gap: 0;
   }
   /* Share the controls' grid so the preview stays pinned for the whole editor. */
   .editor-app .editor-artifact {
     display: contents;
   }
   .editor-app .editor-preview {
-    position: sticky;
-    top: calc(8px + env(safe-area-inset-top, 0px));
-    z-index: 10;
-    align-self: start;
-    height: min(46dvh, 400px);
-    padding: 12px;
+    @apply sticky;
+    @apply [background:var(--paper)];
+    top: var(--editor-preview-top);
+    @apply [z-index:10];
+    @apply [align-self:start];
+    height: var(--editor-preview-height);
+    @apply p-[12px];
   }
   .editor-app .editor-stage {
-    flex: 1 1 0;
-    height: auto;
-    min-height: 0;
-    padding: 8px;
+    @apply [flex:1_1_0];
+    @apply [height:auto];
+    @apply min-h-[0];
+    @apply p-[8px];
   }
   .editor-app .edit-history-actions {
-    margin-top: 0;
+    @apply mt-[0];
   }
+  .editor-app .editor-controls {
+    min-height: calc(100dvh - var(--editor-preview-height) - var(--editor-preview-top));
+    grid-template-rows: 1fr auto;
+    gap: 8px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+  }
+
+  .editor-app .editor-tabs {
+    position: sticky;
+    z-index: 9;
+    top: calc(var(--editor-preview-top) + var(--editor-preview-height));
+    background: var(--paper);
+  }
+
+  .editor-app .editor-download-area {
+    position: sticky;
+    z-index: 11;
+    bottom: 0;
+    margin-inline: calc(-1 * var(--safe-left)) calc(-1 * var(--safe-right));
+    padding: 8px var(--safe-right) calc(8px + env(safe-area-inset-bottom, 0px)) var(--safe-left);
+    border-top: 1px solid var(--line);
+    background: var(--paper);
+  }
+
   /* One scroll path below the preview, including tools and downloads. */
   .editor-app .editor-tool-panel {
-    max-height: none;
-    overflow: visible;
+    @apply [max-height:none];
+    @apply overflow-visible;
     scrollbar-gutter: auto;
+    padding-bottom: 3px;
+  }
+}
+
+@media (max-width: 760px) {
+  html:has(.templates-app),
+  .templates-app .layout-preview-body {
+    --picker-top: env(safe-area-inset-top, 0px);
+    --picker-bottom: env(safe-area-inset-bottom, 0px);
+    --picker-action-space: calc(73px + var(--picker-bottom));
+    --picker-tabs-height: 48px;
+    --picker-preview-height: max(
+      100px,
+      calc((100svh - var(--picker-top) - var(--picker-tabs-height) - var(--picker-action-space)) / 2)
+    );
+  }
+
+  html:has(.templates-app) {
+    scroll-padding-block: calc(var(--picker-top) + var(--picker-preview-height) + var(--picker-tabs-height))
+      var(--picker-action-space);
+  }
+
+  .templates-app .template-main {
+    padding-bottom: 0;
+  }
+
+  .templates-app .layout-preview-body {
+    row-gap: 0;
+  }
+
+  .templates-app .layout-preview-stage {
+    position: sticky;
+    z-index: 3;
+    top: var(--picker-top);
+    align-self: start;
+    background: var(--paper);
+  }
+
+  .templates-app .layout-preview-stage .layout-preview-image {
+    --layout-preview-height: calc(var(--picker-preview-height) - 24px);
+    height: var(--picker-preview-height);
+  }
+
+  .templates-app .layout-picker-options {
+    padding: 0 0 var(--picker-action-space);
+    border: 0;
+    background: transparent;
+  }
+
+  .templates-app .layout-picker-tabs {
+    position: sticky;
+    z-index: 2;
+    top: calc(var(--picker-top) + var(--picker-preview-height));
+    margin-bottom: 12px;
+    background: var(--paper);
+  }
+
+  .templates-app .layout-picker-tabs button {
+    flex-direction: column;
+    min-height: var(--picker-tabs-height);
+    gap: 4px;
+    padding: 4px;
+    font-size: 12px;
+  }
+
+  .templates-app .layout-picker-tabs button > svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .templates-app .layout-picker-panels {
+    min-height: calc(
+      100dvh - var(--picker-top) - var(--picker-preview-height) -
+      var(--picker-tabs-height) - var(--picker-action-space)
+    );
+    overflow-anchor: none;
+  }
+
+  .templates-app .layout-picker-panels > [inert] {
+    display: none;
+  }
+
+  .templates-app .layout-picker-panels > [data-cuts]:not([inert]),
+  .templates-app .layout-picker-options [data-cuts] .template-catalog {
+    display: grid;
+  }
+
+  .templates-app .layout-picker-options [data-cuts] .template-choices {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .templates-app .layout-picker-options [data-cuts] .template-choice {
+    grid-template-rows: 56px auto;
+    align-content: center;
+    gap: 4px;
+    padding: 6px 4px;
+  }
+
+  .templates-app .layout-picker-options [data-cuts] .choice-preview {
+    height: 56px;
+    padding: 3px;
+  }
+
+  .templates-app .layout-picker-options [data-cuts] .choice-copy strong {
+    min-height: 0;
+    font-size: 12px;
+  }
+
+  .templates-app .layout-picker-options .selection-actions {
+    position: fixed;
+    z-index: 4;
+    inset: auto 0 0;
+    margin: 0;
+    padding: 8px var(--safe-right) calc(8px + var(--picker-bottom)) var(--safe-left);
+    border-top: 1px solid var(--line);
+    background: var(--paper);
+  }
+}
+
+@media (max-width: 760px) {
+  .booth-app .capture-main {
+    display: flex;
+    flex-direction: column;
+    min-height: 100dvh;
+  }
+
+  .booth-app .camera-workspace {
+    flex: 1;
+    grid-template-rows: 1fr auto;
+    gap: 12px;
+  }
+
+  .booth-app .capture-review-column {
+    position: sticky;
+    z-index: 15;
+    bottom: 0;
+    gap: 8px;
+    background: var(--paper);
+  }
+
+  .booth-app .capture-camera {
+    position: sticky;
+    top: env(safe-area-inset-top, 0px);
+    z-index: 10;
+    align-self: start;
+  }
+
+  .booth-app .capture-review {
+    min-width: 0;
+  }
+
+  .booth-app .capture-gallery {
+    flex-wrap: nowrap;
+    justify-content: safe center;
+    overflow-x: auto;
+    padding: 4px;
+  }
+
+  .booth-app .capture-slot {
+    flex-basis: max(52px, calc((100% + 8px) / var(--visible-slots) - 8px));
+    max-height: 56px;
+  }
+
+  .booth-app .camera-frame-area > :is(.capture-settings, .camera-photo-effects) {
+    z-index: 16;
+    inset: 12px 12px auto auto;
+  }
+
+  .booth-app .camera-frame-area > .camera-photo-effects {
+    top: 62px;
+  }
+
+  .booth-app :is(.capture-settings, .camera-photo-effects) > summary {
+    width: 44px;
+    min-height: 44px;
+    padding: 3px;
+    gap: 2px;
+    border-radius: 8px;
+    font-size: 8px;
+  }
+
+  .booth-app .camera-frame-area > :is(.capture-settings, .camera-photo-effects) > :is(.settings-panel, .camera-photo-effect-options) {
+    inset: calc(100% + 8px) 0 auto auto;
+  }
+
+  .booth-app .camera-frame-area > :is(.capture-settings, .camera-photo-effects)
+    > :is(.settings-panel, .camera-photo-effect-options) {
+    width: min(clamp(180px, 58vw, 222px), calc(100cqw - 24px));
+    max-height: min(42dvh, 270px);
+    padding: 8px;
+  }
+
+  .booth-app .capture-settings .session-settings {
+    gap: 8px;
+    font-size: 0.8125rem;
+  }
+
+  .booth-app .camera-photo-effect-options {
+    gap: 4px;
+  }
+
+  .booth-app .camera-photo-effect-options button {
+    min-height: 44px;
+    padding: 4px 2px;
+    font-size: 0.6875rem;
+  }
+
+  .booth-app .camera-photo-effect-options .camera-effect-swatch {
+    width: 23px;
+    height: 23px;
+  }
+
+  .booth-app .camera-frame-area > .capture-settings > .settings-panel {
+    top: calc(100% + 58px);
+  }
+
+  .booth-app .capture-pose-prompt {
+    top: 42px;
+    right: auto;
+    left: 12px;
+  }
+
+  .booth-app .floating-shutter:has(.camera-effect-carousel) {
+    top: calc(var(--preview-height) - 8px);
+    width: calc(100% - 16px);
+  }
+
+  .booth-app .camera-effect-carousel .shutter-button {
+    width: 54px;
+    height: 54px;
+  }
+
+  .booth-app .camera-effect-item {
+    flex-basis: 33px;
+  }
+
+  .booth-app .floating-shutter:has(.cancel-countdown) {
+    top: calc(var(--preview-height) - 14px);
+    bottom: auto;
+    width: min(220px, calc(100% - 32px));
+    transform: translate(-50%, -100%);
+    z-index: 17;
+  }
+
+  .booth-app :is(.capture-settings, .camera-photo-effects) > summary > :is(svg, img) {
+    width: 16px;
+    height: 16px;
+  }
+
+  .booth-app .capture-action-bar {
+    position: static;
+    border-top: 1px solid var(--line);
+  }
+
+  .booth-app .capture-action-bar .capture-continue {
+    padding-block: 10px;
+    border: 0;
+  }
+
+  .booth-app .capture-action-bar .capture-next-actions {
+    width: 100%;
+  }
+}
+
+@media (max-width: 700px) {
+  .templates-app .intro,
+  .booth-app .capture-intro,
+  .editor-app .editor-brand-header {
+    padding-bottom: 8px;
+  }
+
+  .editor-app .editor-preview {
+    padding-top: 6px;
+  }
+}
+
+@media (max-width: 760px) {
+  html:has(.layout-enlarged-dialog:modal) {
+    overflow: hidden;
+  }
+
+  .app .layout-enlarged-dialog {
+    --preview-sheet-inset: max(48px, env(safe-area-inset-top, 0px));
+    --preview-sheet-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+    position: fixed;
+    inset: auto 0 0;
+    width: 100%;
+    max-width: none;
+    max-height: calc(100dvh - var(--preview-sheet-inset));
+    margin: 0;
+    padding: 0 16px var(--preview-sheet-bottom);
+    border-radius: 18px 18px 0 0;
+  }
+
+  .layout-enlarged-dialog .dialog-heading {
+    min-height: 56px;
+    padding-right: 48px;
+    border-bottom: 1px solid #ddd;
+  }
+
+  .layout-enlarged-dialog .dialog-heading h2 {
+    position: static;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    clip-path: none;
+    font-size: 16px;
+  }
+
+  .layout-enlarged-dialog .dialog-close {
+    width: 44px;
+    height: 44px;
+  }
+
+  .layout-enlarged-dialog .layout-preview-image {
+    --layout-preview-height: min(
+      68dvh,
+      calc(100dvh - var(--preview-sheet-inset) - var(--preview-sheet-bottom) - 74px)
+    );
+    padding-top: 12px;
+  }
+
+  .layout-enlarged-dialog .layout-preview-print {
+    width: min(100%, calc(var(--layout-preview-height) * var(--layout-aspect)));
+  }
+}
+
+@media (max-width: 760px) and (prefers-reduced-motion: no-preference) {
+  .app .layout-enlarged-dialog[open] {
+    animation: preview-sheet-enter 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+}
+
+@keyframes preview-sheet-enter {
+  from {
+    transform: translateY(100%);
   }
 }

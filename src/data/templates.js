@@ -55,8 +55,7 @@ export const templates = [
     rows: 1,
     count: 1,
     cellHeight: 900,
-    padding: 72,
-    footer: 270,
+    footer: 180,
   },
   {
     id: 'portrait',
@@ -167,4 +166,18 @@ export const templates = [
     rows: 3,
     count: 9,
   },
+  { id: 'film-three', name: 'Film strip', cols: 1, rows: 3, count: 3, padding: 90, gap: 36 },
+  { id: 'square-strip', name: 'Square strip', cols: 1, rows: 4, count: 4, cellHeight: 900 },
 ];
+
+export const pickerLayouts = [
+  ['strip-four', '4-cut'],
+  ['strip-three', '3-cut'],
+  ['grid-four', '2×2'],
+  ['strip-two', '2-cut'],
+  ['polaroid', 'Polaroid'],
+  ['film-three', 'Film strip'],
+  ['square-strip', 'Square strip'],
+  ['duo-row', 'Side by side'],
+  ['trio-row', '3 across'],
+].map(([id, name]) => ({ ...templates.find((layout) => layout.id === id), name }));

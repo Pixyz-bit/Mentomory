@@ -3,16 +3,27 @@ import { templates } from '../../data/templates.js';
 import { filterLayouts, layoutPhotoCounts } from '../../lib/layout-categories.js';
 import TemplateChoice from './TemplateChoice.jsx';
 import TemplateTools from './TemplateTools.jsx';
-export default function TemplateCatalog({ template, locked, onSelect }) {
+export default function TemplateCatalog({
+  template,
+  locked,
+  onSelect,
+  layouts = templates,
+  showFilters = true,
+  diagram,
+}) {
   const [count, setCount] = useState('all');
-  const visible = filterLayouts(templates, { count });
+  const visible = filterLayouts(layouts, { count });
   return (
     <section className="template-catalog" aria-label="Photo layouts">
-      <TemplateTools {...{ count, setCount }} counts={layoutPhotoCounts(templates)} />
-      <p className="template-results" role="status" aria-live="polite">
-        {visible.length} {visible.length === 1 ? 'layout' : 'layouts'}
-        {locked ? ' · Your capture layout is locked for this session.' : ''}
-      </p>
+      {showFilters && (
+        <>
+          <TemplateTools {...{ count, setCount }} counts={layoutPhotoCounts(layouts)} />
+          <p className="template-results" role="status" aria-live="polite">
+            {visible.length} {visible.length === 1 ? 'layout' : 'layouts'}
+            {locked ? ' · Your capture layout is locked for this session.' : ''}
+          </p>
+        </>
+      )}
       <div
         className="template-choices"
         data-filtered={count !== 'all'}
@@ -22,7 +33,7 @@ export default function TemplateCatalog({ template, locked, onSelect }) {
         {visible.map((item) => (
           <TemplateChoice
             key={item.id}
-            {...{ item, locked, onSelect }}
+            {...{ item, locked, onSelect, diagram }}
             selected={item.id === template?.id}
           />
         ))}

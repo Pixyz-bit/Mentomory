@@ -7,10 +7,12 @@ import LandingFormats from '../../components/landing/LandingFormats.jsx';
 import LandingHowItWorks from '../../components/landing/LandingHowItWorks.jsx';
 import LandingDetails from '../../components/landing/LandingDetails.jsx';
 import LandingClosing from '../../components/landing/LandingClosing.jsx';
+import BrandIntro from '../../components/landing/BrandIntro.jsx';
 
-export default function LandingPage({ onCapture }) {
+export default function LandingPage({ onCapture, showIntro }) {
   return (
     <main className="landing-main">
+      {showIntro && <BrandIntro />}
       <div className="landing-section-inner">
         <LandingHero onCapture={onCapture} />
       </div>

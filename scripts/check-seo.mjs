@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises';
 import assert from 'node:assert/strict';
 import { getSeo, publicPages } from '../src/data/seo.js';
+import { pickerLayouts } from '../src/data/templates.js';
 
 for (const [page, file] of [
   ['home', 'index.html'],
@@ -18,7 +19,7 @@ for (const [page, file] of [
   if (seo.index) assert.ok(html.includes('application/ld+json'), file);
   else assert.ok(!html.includes('application/ld+json'), file);
   if (page === 'templates')
-    assert.equal((html.match(/class="template-choice(?: |")/g) || []).length, 21);
+    assert.equal((html.match(/class="template-choice(?: |")/g) || []).length, pickerLayouts.length);
 }
 const sitemap = await fs.readFile('dist/sitemap.xml', 'utf8');
 for (const page of publicPages) assert.ok(sitemap.includes(`<loc>${getSeo(page).url}</loc>`));

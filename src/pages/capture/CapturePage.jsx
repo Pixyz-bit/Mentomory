@@ -1,22 +1,62 @@
+import { useState } from 'react';
 import CameraTools from '../../components/capture/CameraTools.jsx';
 import CameraPreview from '../../components/capture/CameraPreview.jsx';
 import CapturedGallery from '../../components/capture/CapturedGallery.jsx';
+import PhotoSettings from '../../components/capture/PhotoSettings.jsx';
 import CaptureFeedback from '../../components/capture/CaptureFeedback.jsx';
 import Icon from '../../components/common/Icon.jsx';
+import Brand from '../../components/common/Brand.jsx';
 import posthog, { posthogEnabled } from '../../lib/posthog.js';
-import { navigate } from '../../lib/navigation.js';
-export default function CapturePage({ session }) {
+import { navigate, navigateLink } from '../../lib/navigation.js';
+export default function CapturePage({ session, posePrompts = [] }) {
   const showTrackingNotice =
     session.sticker !== 'none' && session.cameraActive && !session.stickerReady;
-  const remaining = Math.max(0, session.template.count - session.shots.length);
+  const [selectedShotIndex, setPreviewIndex] = useState(null);
+  const hasPendingReview = session.reviewShotIndex != null;
+  const previewIndex = session.retakeIndex == null
+    ? selectedShotIndex ?? session.reviewShotIndex ?? null
+    : null;
+  const previewShot = session.shots[previewIndex];
+  const savePreview = () => {
+    setPreviewIndex(null);
+    session.setReviewShotIndex?.(null);
+  };
+  const captured = session.shots.length;
+  const total = session.template.count;
+  const captureUnit = session.mode === 'live' ? 'clip' : 'photo';
+  const prompt = posePrompts[session.retakeIndex ?? session.shots.length];
   return (
     <main className="capture-main">
+      <header className="intro capture-intro">
+        <Brand />
+        <h1 className="sr-only focus:[outline:none]" tabIndex={-1}>Take your photos.</h1>
+      </header>
       <section className="camera-workspace" aria-label="Camera workspace">
         <div className="capture-camera">
           <CameraPreview
             {...session}
+            posePrompt={prompt}
+            previewShot={previewShot}
+            previewNumber={previewIndex + 1}
+            onSavePreview={hasPendingReview && previewIndex === session.reviewShotIndex ? savePreview : undefined}
+            onRetakePreview={() => {
+              session.retakePhoto(previewIndex);
+              setPreviewIndex(null);
+            }}
             hasNotification={Boolean(session.error) || showTrackingNotice}
-            tools={<CameraTools session={session} />}
+            tools={(shutter) => <CameraTools session={session}>{shutter}</CameraTools>}
+            settings={
+              <>
+                <details className="capture-settings" name="booth-camera-panel">
+                  <summary><Icon name="settings" size={22} /><span>Settings</span></summary>
+                  <PhotoSettings {...session} embedded />
+                </details>
+                <div className="capture-setting-badges" aria-label="Active camera settings">
+                  {session.delay > 0 && <span aria-label={`${session.delay} second countdown`}>{session.delay}s</span>}
+                  {session.delay > 0 && session.autoStart && <span aria-label="Auto start enabled">Auto</span>}
+                </div>
+              </>
+            }
           >
             <CaptureFeedback {...session} />
             {showTrackingNotice && (
@@ -30,55 +70,49 @@ export default function CapturePage({ session }) {
             )}
           </CameraPreview>
         </div>
-        <aside className="capture-sidebar" aria-label="Captured moments and next step">
-          <div className="capture-review-scroll">
-            <CapturedGallery {...session} />
-          </div>
-          <div className="capture-continue">
-            <p>
-              {session.completed
-                ? 'Your moments are ready to customize.'
-                : remaining +
-                  ' more ' +
-                  (session.mode === 'live'
-                    ? remaining === 1
-                      ? 'clip'
-                      : 'clips'
-                    : remaining === 1
-                      ? 'photo'
-                      : 'photos') +
-                  ' needed.'}
-            </p>
-            <div className="capture-next-actions">
-              <button
-                className="button button-dark"
-                disabled={!session.completed || session.busy}
-                onClick={() => {
-                  if (posthogEnabled)
-                    posthog.capture('customization_started', {
-                      media_type: session.mode === 'live' ? 'live_clip' : 'photo',
-                      media_count: session.shots.length,
-                      template_id: session.template.id,
-                    });
-                  navigate('/edit');
-                }}
-              >
-                Continue to customize
-                <Icon name="arrow" />
-              </button>
-              {session.shots.length > 0 && (
+        <div className="capture-review-column">
+          <CapturedGallery {...session} previewIndex={previewIndex} onPreview={setPreviewIndex} />
+          <section className="capture-action-bar" aria-label="Photo progress and navigation">
+            <div className="capture-continue">
+              <div className="capture-next-actions">
                 <button
-                  className="button button-outline"
-                  disabled={session.busy}
-                  onClick={session.redoAll}
+                  className="button button-dark enabled:bg-black! enabled:text-white!"
+                  disabled={session.busy || !session.completed || hasPendingReview}
+                  onClick={() => {
+                    if (posthogEnabled)
+                      posthog.capture('customization_started', {
+                        media_type: session.mode === 'live' ? 'live_clip' : 'photo',
+                        media_count: session.shots.length,
+                        template_id: session.template.id,
+                      });
+                    navigate('/edit');
+                  }}
                 >
-                  <Icon name="retake" size={16} />
-                  Redo all {session.mode === 'live' ? 'clips' : 'photos'}
+                  <span role="status" className="tabular-nums">
+                    {session.completed && !hasPendingReview
+                      ? 'Continue'
+                      : session.retakeIndex != null
+                        ? <span className="whitespace-nowrap">Retaking #{session.retakeIndex + 1}</span>
+                        : <>
+                            <span aria-hidden="true">{captured}/{total} captured</span>
+                            <span className="sr-only">{captured} of {total} {captureUnit}s captured</span>
+                          </>}
+                  </span>
+                  {session.completed && !hasPendingReview && <Icon name="arrow" />}
                 </button>
+              </div>
+              {session.retakeIndex != null ? (
+                <button type="button" className="button button-outline capture-back" disabled={session.busy} onClick={session.cancelRetake}>
+                  Cancel retake
+                </button>
+              ) : previewShot ? (
+                <button type="button" className="button button-outline capture-back" disabled={selectedShotIndex == null} onClick={() => setPreviewIndex(null)}>Back</button>
+              ) : (
+                <a className="button button-outline capture-back" href="/templates" onClick={navigateLink} aria-label="Back to layout">Back</a>
               )}
             </div>
-          </div>
-        </aside>
+          </section>
+        </div>
       </section>
     </main>
   );

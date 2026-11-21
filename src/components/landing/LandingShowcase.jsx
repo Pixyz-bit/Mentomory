@@ -39,7 +39,6 @@ export default function LandingShowcase() {
           </span>
         </div>
       </div>
-      <figcaption>Illustrative sample captures</figcaption>
     </figure>
   );
 }

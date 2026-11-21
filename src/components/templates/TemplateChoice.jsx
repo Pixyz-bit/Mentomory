@@ -1,7 +1,7 @@
-import { layoutSize } from '../../lib/collage.js';
+import { layoutSize, pairLayout } from '../../lib/collage.js';
 import TemplateMini from '../common/TemplateMini.jsx';
-export default function TemplateChoice({ item, selected, locked, onSelect }) {
-  const { width, height } = layoutSize(item);
+export default function TemplateChoice({ item, selected, locked, onSelect, diagram }) {
+  const { width, height } = layoutSize(diagram === 'paired' ? pairLayout(item) : item);
   return (
     <button
       className={'template-choice ' + (selected ? 'selected' : '')}
@@ -10,13 +10,10 @@ export default function TemplateChoice({ item, selected, locked, onSelect }) {
       onClick={() => onSelect(item.id)}
     >
       <span className="choice-preview" style={{ '--layout-aspect': width / height }}>
-        <TemplateMini template={item} />
+        <TemplateMini template={item} diagram={diagram} />
       </span>
       <span className="choice-copy">
         <strong>{item.name}</strong>
-        <span>
-          {item.count} {item.count === 1 ? 'photo' : 'photos'}
-        </span>
       </span>
     </button>
   );

@@ -1,56 +1,56 @@
 .landing-details {
-  display: grid;
-  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
+  @apply grid;
+  @apply [grid-template-columns:minmax(0,_0.95fr)_minmax(0,_1.05fr)];
   align-items: start;
   gap: clamp(40px, 6vw, 88px);
-  box-sizing: border-box;
-  width: 100%;
-  padding-block: clamp(48px, 6vw, 88px);
+  @apply [box-sizing:border-box];
+  @apply w-[100%];
+  @apply [padding-block:clamp(48px,_6vw,_88px)];
   padding-left: max(var(--safe-left, 32px), calc((100% - 1200px) / 2));
   padding-right: max(var(--safe-right, 32px), calc((100% - 1200px) / 2));
   scroll-margin-block: 16px;
-  background: transparent;
-  color: var(--ink);
+  @apply [background:transparent];
+  @apply [color:var(--ink)];
 }
 
 .landing-details-intro > .wordmark {
-  display: block;
-  width: fit-content;
-  max-width: 100%;
-  margin-bottom: 24px;
+  @apply block;
+  @apply [width:fit-content];
+  @apply max-w-[100%];
+  @apply mb-[24px];
 }
 
 .landing-details-intro .brand-logo {
-  width: 180px;
-  max-width: 100%;
-  height: auto;
+  @apply w-[180px];
+  @apply max-w-[100%];
+  @apply [height:auto];
 }
 
 .landing-details h2 {
-  max-width: 17ch;
-  margin: 0 0 24px;
+  @apply [max-width:17ch];
+  @apply [margin:0_0_24px];
   font-size: clamp(32px, 3.5vw, 44px);
-  font-weight: 800;
-  line-height: 1.15;
-  letter-spacing: -0.035em;
-  text-wrap: balance;
+  @apply [font-weight:800];
+  @apply leading-[1.15];
+  @apply [letter-spacing:-0.035em];
+  @apply [text-wrap:balance];
 }
 
 .landing-details p {
-  max-width: 65ch;
-  margin: 0;
-  color: var(--muted);
-  font-size: 18px;
-  line-height: 1.75;
+  @apply [max-width:65ch];
+  @apply m-[0];
+  @apply [color:var(--muted)];
+  @apply text-[18px];
+  @apply leading-[1.75];
 }
 
 .landing-details a {
-  color: inherit;
+  @apply [color:inherit];
   text-underline-offset: 4px;
 }
 
 .landing-details-faq {
-  min-width: 0;
+  @apply min-w-[0];
 }
 
 .landing-details details {
@@ -62,33 +62,33 @@
 }
 
 .landing-details details[open] {
-  background-color: var(--paper);
+  @apply [background-color:var(--paper)];
 }
 
 .landing-details summary {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 24px;
-  min-height: 80px;
-  padding: 24px 4px;
-  cursor: pointer;
-  list-style: none;
-  font-size: 20px;
-  font-weight: 700;
-  line-height: 1.5;
-  letter-spacing: -0.025em;
+  @apply flex;
+  @apply items-center;
+  @apply justify-between;
+  @apply gap-[24px];
+  @apply min-h-[80px];
+  @apply [padding:24px_4px];
+  @apply [cursor:pointer];
+  @apply [list-style:none];
+  @apply text-[20px];
+  @apply [font-weight:700];
+  @apply leading-[1.5];
+  @apply [letter-spacing:-0.025em];
 }
 
 .landing-details summary::-webkit-details-marker {
-  display: none;
+  @apply hidden;
 }
 
 .landing-details summary::after {
   content: '';
-  flex: 0 0 20px;
-  width: 20px;
-  height: 20px;
+  @apply [flex:0_0_20px];
+  @apply w-[20px];
+  @apply h-[20px];
   background:
     linear-gradient(currentColor, currentColor) center / 14px 1.5px no-repeat,
     linear-gradient(currentColor, currentColor) center / 1.5px 14px no-repeat;
@@ -101,62 +101,74 @@
 }
 
 .landing-details summary:hover {
-  background-color: var(--surface);
+  @apply [background-color:var(--surface)];
 }
 
 .landing-details details p {
-  padding: 0 44px 28px 4px;
-  font-size: 17px;
-  line-height: 1.75;
+  @apply [padding:0_44px_28px_4px];
+  @apply text-[17px];
+  @apply leading-[1.75];
 }
 
 .landing-details :is(a, summary):focus-visible {
   outline: 2px solid var(--ink);
-  outline-offset: 4px;
-  border-radius: 2px;
+  @apply [outline-offset:4px];
+  @apply rounded-[2px];
 }
 
 .landing-details summary:focus-visible {
   outline: 2px solid var(--ink);
-  outline-offset: -3px;
+  @apply [outline-offset:-3px];
 }
 
 @media (max-width: 900px) {
   .landing-details {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 24px;
+    @apply [grid-template-columns:minmax(0,_1fr)];
+    @apply gap-[24px];
   }
 
   .landing-details h2 {
-    max-width: 24ch;
+    @apply [max-width:24ch];
   }
 }
 
 @media (max-width: 600px) {
   .landing-details {
-    gap: 24px;
-    padding-block: 40px;
+    @apply gap-[24px];
+    padding-block: clamp(28px, 8vw, 40px);
+  }
+
+  .landing-details-intro {
+    text-align: center;
+  }
+
+  .landing-details-intro p {
+    max-width: 34ch;
+  }
+
+  .landing-details-intro :is(h2, p) {
+    margin-inline: auto;
   }
 
   .landing-details h2 {
-    margin-bottom: 16px;
-    font-size: clamp(28px, 4dvh, 32px);
+    @apply mb-[16px];
+    font-size: clamp(1.5rem, 1rem + 3vw, 1.875rem);
   }
 
   .landing-details p {
-    font-size: 16px;
-    line-height: 1.6;
+    font-size: clamp(0.875rem, 0.8rem + 0.3vw, 0.95rem);
+    @apply leading-[1.6];
   }
 
   .landing-details summary {
-    min-height: 64px;
-    gap: 16px;
-    padding-block: 16px;
-    font-size: 18px;
+    min-height: 54px;
+    @apply gap-[16px];
+    @apply [padding-block:16px];
+    font-size: clamp(0.9375rem, 0.82rem + 0.55vw, 1.0625rem);
   }
 
   .landing-details details p {
-    padding: 0 28px 20px 4px;
-    font-size: 16px;
+    @apply [padding:0_28px_20px_4px];
+    @apply text-[16px];
   }
 }

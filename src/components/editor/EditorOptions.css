@@ -1,48 +1,48 @@
 .editor-section {
-  flex-shrink: 0;
+  @apply [flex-shrink:0];
   border-bottom: 1px solid var(--line);
-  padding-bottom: 18px;
+  @apply pb-[18px];
 }
 .editor-section summary {
-  padding: 0 0 12px;
-  font-size: 14px;
+  @apply [padding:0_0_12px];
+  @apply text-[14px];
 }
 .editor-section:not([open]) {
-  padding-bottom: 0;
+  @apply pb-[0];
 }
 .editor-options {
-  gap: 20px;
+  @apply gap-[20px];
 }
 .decoration-options {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
+  @apply grid;
+  @apply [grid-template-columns:repeat(3,_minmax(0,_1fr))];
+  @apply gap-[8px];
 }
 .motif-preview {
-  width: 42px;
-  height: 42px;
+  @apply w-[42px];
+  @apply h-[42px];
 }
 .caption-control {
-  font-size: 12px;
-  font-weight: 700;
-  flex-shrink: 0;
+  @apply text-[12px];
+  @apply [font-weight:700];
+  @apply [flex-shrink:0];
 }
 .caption-control input {
-  display: block;
-  width: 100%;
-  padding: 10px;
-  margin: 7px 0;
-  border: 1px solid #a1a1aa;
-  border-radius: 7px;
-  background: #fff;
+  @apply block;
+  @apply w-[100%];
+  @apply p-[10px];
+  @apply [margin:7px_0];
+  @apply [border:1px_solid_#a1a1aa];
+  @apply rounded-[7px];
+  @apply [background:#fff];
 }
 .caption-control > span {
-  color: var(--muted);
-  font-size: 10px;
-  font-weight: 400;
+  @apply [color:var(--muted)];
+  @apply text-[10px];
+  @apply [font-weight:400];
 }
 .preview-play {
-  margin: 0 auto 6px;
+  @apply [margin:0_auto_6px];
 }
 .swatch-dots {
   background-image: radial-gradient(#a8b9ba 2px, transparent 2px);

@@ -3,7 +3,7 @@ import { frameRects, layoutSize, paintStrip } from '../../lib/collage.js';
 import { framePhotoRect } from '../../lib/frames/frame-art.js';
 import useFrameArtwork from '../../hooks/useFrameArtwork.js';
 
-const stencil = { cols: 1, rows: 3, count: 3 };
+const stencil = { cols: 1, rows: 1, count: 1, cellHeight: 450 };
 export default function FrameThumbnail({ frame }) {
   const canvas = useRef(null);
   const artwork = useFrameArtwork(frame.id);
@@ -11,12 +11,19 @@ export default function FrameThumbnail({ frame }) {
     if (!artwork.ready) return;
     const size = layoutSize(stencil);
     const ctx = canvas.current.getContext('2d');
-    ctx.setTransform(64 / size.width, 0, 0, 150 / size.height, 0, 0);
+    ctx.setTransform(
+      canvas.current.width / size.width,
+      0,
+      0,
+      canvas.current.height / (size.height - size.footer),
+      0,
+      0
+    );
     paintStrip(ctx, [], stencil, {
       frame: frame.id,
       background: 'white',
       frameArtwork: artwork.image,
-      caption: 'mentomory',
+      caption: '',
     });
     // Empty apertures preview the actual artwork without inventing captured photos.
     frameRects(stencil).forEach((rect) => {
@@ -28,7 +35,7 @@ export default function FrameThumbnail({ frame }) {
   }, [frame.id, artwork.ready, artwork.image]);
   return (
     <span className="frame-thumbnail" aria-hidden="true">
-      <canvas ref={canvas} width="64" height="150" />
+      <canvas ref={canvas} width="192" height="103" />
       {!artwork.ready && <span>{artwork.error ? 'Unavailable' : 'Loading…'}</span>}
     </span>
   );

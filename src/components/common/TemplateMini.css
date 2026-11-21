@@ -1,86 +1,86 @@
 .template-content {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  min-height: 0;
-  padding: 0 12px 12px;
+  @apply flex;
+  @apply flex-col;
+  @apply [flex:1];
+  @apply min-h-[0];
+  @apply [padding:0_12px_12px];
 }
 .template-list {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  grid-auto-rows: 58px;
-  gap: 7px;
-  height: 225px;
-  min-height: 0;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  padding: 3px;
+  @apply grid;
+  @apply [grid-template-columns:repeat(2,_minmax(0,_1fr))];
+  @apply [grid-auto-rows:58px];
+  @apply gap-[7px];
+  @apply h-[225px];
+  @apply min-h-[0];
+  @apply [overflow-y:auto];
+  @apply [overscroll-behavior:contain];
+  @apply p-[3px];
 }
 .template-rail .template-button {
-  padding: 4px;
-  gap: 4px;
+  @apply p-[4px];
+  @apply gap-[4px];
 }
 .template-rail .template-mini {
-  height: 28px;
+  @apply h-[28px];
 }
 .template-button {
   --mini-photo: #e5e7eb;
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  min-width: 0;
-  padding: 8px;
-  border: 1.5px solid #111;
-  border-radius: 10px;
-  background: #fff;
+  @apply relative;
+  @apply flex;
+  @apply flex-col;
+  @apply items-center;
+  @apply justify-center;
+  @apply gap-[6px];
+  @apply min-w-[0];
+  @apply p-[8px];
+  @apply [border:1.5px_solid_#111];
+  @apply rounded-[10px];
+  @apply [background:#fff];
 }
 .template-button:hover:not(:disabled),
 .sticker-option:hover:not(:disabled) {
-  background: #f2f5fa;
+  @apply [background:#f2f5fa];
 }
 .template-button.selected,
 .sticker-option.selected {
-  background: #111;
-  color: #fff;
+  @apply [background:#111];
+  @apply [color:#fff];
 }
 .template-button.selected:hover:not(:disabled),
 .sticker-option.selected:hover:not(:disabled) {
-  background: #242424;
+  @apply [background:#242424];
 }
 .template-button.selected {
   --mini-photo: #111;
 }
 .template-button:disabled {
-  opacity: 1;
+  @apply [opacity:1];
 }
 .template-button:disabled:not(.selected) {
-  opacity: 0.5;
+  @apply [opacity:0.5];
 }
 .template-mini {
-  display: block;
-  width: 38px;
-  height: 44px;
-  overflow: visible;
+  @apply block;
+  @apply w-[38px];
+  @apply h-[44px];
+  @apply overflow-visible;
 }
 .template-name {
-  font-size: 11px;
-  font-weight: 700;
-  text-align: center;
+  @apply text-[11px];
+  @apply [font-weight:700];
+  @apply text-center;
 }
 .selected-mark {
-  width: 12px;
-  height: 12px;
-  position: absolute;
-  right: 6px;
-  top: 6px;
+  @apply w-[12px];
+  @apply h-[12px];
+  @apply absolute;
+  @apply [right:6px];
+  @apply [top:6px];
 }
 .rail-note {
-  color: var(--muted);
-  font-size: 11px;
-  line-height: 1.5;
-  margin: 10px 2px 0;
-  flex-shrink: 0;
+  @apply [color:var(--muted)];
+  @apply text-[11px];
+  @apply leading-[1.5];
+  @apply [margin:10px_2px_0];
+  @apply [flex-shrink:0];
 }

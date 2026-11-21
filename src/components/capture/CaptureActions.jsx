@@ -1,4 +1,5 @@
 import Icon from '../common/Icon.jsx';
+import StickerThumbnail from './StickerThumbnail.jsx';
 export default function CaptureActions({
   countdown,
   cancelCountdown,
@@ -8,10 +9,12 @@ export default function CaptureActions({
   stickerReady,
   takePhoto,
   mode,
+  sticker = 'none',
+  recordingSeconds = 7,
 }) {
   if (countdown !== null)
     return (
-      <button className="button button-outline cancel-capture" onClick={cancelCountdown}>
+      <button className="button button-outline cancel-capture cancel-countdown" onClick={cancelCountdown}>
         Cancel countdown
       </button>
     );
@@ -27,7 +30,7 @@ export default function CaptureActions({
       : completed
         ? 'All captured'
         : mode === 'live'
-          ? 'Record 7 seconds'
+          ? `Record ${recordingSeconds} ${recordingSeconds === 1 ? 'second' : 'seconds'}`
           : 'Take photo';
   return (
     <div className="shutter-control">
@@ -38,9 +41,10 @@ export default function CaptureActions({
         aria-label={label}
       >
         <span className="shutter-core">
-          <Icon name="shutter" size={64} />
+          {sticker === 'none' ? <Icon name="shutter" size={64} /> : <StickerThumbnail id={sticker} />}
         </span>
       </button>
+      <span className="shutter-tooltip" aria-hidden="true">{label}</span>
     </div>
   );
 }

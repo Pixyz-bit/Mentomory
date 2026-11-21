@@ -1,12 +1,10 @@
 import { navigateLink } from '../../lib/navigation.js';
-import Brand from '../common/Brand.jsx';
 import './LandingDetails.css';
 
 export default function LandingDetails() {
   return (
     <section className="landing-details" aria-labelledby="about-booth-title">
       <div className="landing-details-intro">
-        <Brand />
         <h2 id="about-booth-title">Your online photo booth, wherever you are.</h2>
         <p>
           Mentomory turns your browser into a photo booth. Make a classic photo strip, a

@@ -1,15 +1,12 @@
-export default function EditorIntro({ heading, exporting, onBack }) {
+import Brand from '../common/Brand.jsx';
+
+export default function EditorIntro({ heading }) {
   return (
-    <div className="intro editor-intro">
-      <div>
-        <h1 ref={heading} tabIndex="-1">
-          Make it yours.
-        </h1>
-        <p>Choose your format, color and finishing touches. Keep every moment.</p>
-      </div>
-      <button className="text-button" disabled={exporting} onClick={onBack}>
-        Back to booth
-      </button>
-    </div>
+    <header className="editor-brand-header">
+      <Brand />
+      <h1 ref={heading} tabIndex="-1" className="sr-only focus:[outline:none]">
+        Customize your photos
+      </h1>
+    </header>
   );
 }

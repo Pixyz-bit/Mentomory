@@ -1,38 +1,38 @@
 .frame-heading {
-  display: flex;
+  @apply flex;
   align-items: start;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 12px;
+  @apply justify-between;
+  @apply gap-[12px];
+  @apply mb-[12px];
 }
 .frame-heading p,
 .frame-note {
-  font-size: 11px;
-  line-height: 1.5;
-  margin: 0;
+  @apply text-[11px];
+  @apply leading-[1.5];
+  @apply m-[0];
 }
 .frame-heading button {
-  flex-shrink: 0;
-  font-size: 11px;
+  @apply [flex-shrink:0];
+  @apply text-[11px];
 }
 .frame-options {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
+  @apply grid;
+  @apply [grid-template-columns:repeat(3,_minmax(0,_1fr))];
+  @apply gap-[8px];
 }
 .frame-option {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 9px;
-  padding: 12px 6px;
-  border: 2px solid #000;
-  border-radius: 2px;
-  background: #fff;
-  color: #000;
-  font-size: 11px;
-  font-weight: 700;
+  @apply relative;
+  @apply flex;
+  @apply flex-col;
+  @apply items-center;
+  @apply gap-[9px];
+  @apply [padding:12px_6px];
+  @apply [border:2px_solid_#000];
+  @apply rounded-[2px];
+  @apply [background:#fff];
+  @apply [color:#000];
+  @apply text-[11px];
+  @apply [font-weight:700];
   transition:
     transform 150ms ease,
     background-color 150ms ease,
@@ -42,40 +42,40 @@
   transform: translateY(-2px);
 }
 .frame-option.selected {
-  color: #fff;
-  background: #000;
+  @apply [color:#fff];
+  @apply [background:#000];
 }
 .frame-thumbnail {
-  position: relative;
-  display: grid;
-  place-items: center;
-  width: 64px;
-  max-width: 100%;
-  background: #fff;
-  color: #000;
+  @apply relative;
+  @apply grid;
+  @apply [place-items:center];
+  @apply h-[42px] w-full overflow-hidden rounded-[4px] border border-solid border-[#d4d4d8];
+  @apply max-w-[100%];
+  @apply [background:#fff];
+  @apply [color:#000];
 }
 .frame-thumbnail canvas {
-  display: block;
-  width: 100%;
-  height: auto;
+  @apply block;
+  @apply w-[100%];
+  @apply h-full;
 }
 .frame-thumbnail > span {
-  position: absolute;
-  font-size: 9px;
+  @apply absolute;
+  @apply text-[9px];
 }
 .frame-check {
-  position: absolute;
-  right: 4px;
-  top: 4px;
+  @apply absolute;
+  @apply [right:4px];
+  @apply [top:4px];
 }
 .frame-note {
-  margin-top: 10px;
-  min-height: 2.8em;
+  @apply mt-[10px];
+  @apply min-h-[2.8em];
 }
 .background-frame-note {
-  font-size: 11px;
-  line-height: 1.5;
-  margin: 0 0 10px;
+  @apply text-[11px];
+  @apply leading-[1.5];
+  @apply [margin:0_0_10px];
 }
 @media (prefers-reduced-motion: reduce) {
   .frame-option {

@@ -4,7 +4,7 @@ export default function Brand() {
     <a className="wordmark" href="/" onClick={navigateLink} aria-label="Mentomory home">
       {' '}
       <img
-        className="brand-logo"
+        className="brand-logo block h-auto w-[150px]"
         src={`${import.meta.env.BASE_URL}mentomory-logo-v4.png`}
         alt="Mentomory"
         width="1200"

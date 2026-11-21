@@ -6,14 +6,14 @@ const pages = {
     path: '/',
     title: SITE_TITLE,
     description:
-      'Create photo strips with Mentomory’s online photo booth. Choose 21 layouts, add frames and face effects, then download JPG photos or seven-second MP4 live strips.',
+      'Create photo strips with Mentomory’s online photo booth. Choose 23 layouts, add frames and face effects, then download JPG photos or seven-second MP4 live strips.',
     index: true,
   },
   templates: {
     path: '/templates',
     title: SITE_TITLE,
     description:
-      'Explore 21 photo booth layouts: classic strips, Polaroids, single prints and photo grids. Pick your layout, capture your photos and customize your keepsake.',
+      'Explore photo booth layouts: classic strips, Polaroids, single prints and photo grids. Pick your layout, capture your photos and customize your keepsake.',
     index: true,
   },
   booth: {
@@ -77,7 +77,7 @@ export function getStructuredData(page = 'home') {
       isAccessibleForFree: true,
       image: seo.image,
       featureList: [
-        '21 photo layouts',
+        '23 photo layouts',
         'Decorative frames and face effects',
         'JPG photo downloads',
         'Five-second MP4 live strips',

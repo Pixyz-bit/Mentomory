@@ -14,9 +14,13 @@ export default function usePhotoCapture({
   shots,
   sequence,
   setAutoCapture = () => {},
+  autoStart = true,
   template,
   mode,
+  motion,
   mirror,
+  photoEffect = 'none',
+  backgroundBlur,
   delay,
   sticker,
   face,
@@ -30,6 +34,7 @@ export default function usePhotoCapture({
   setStatus,
   setRecordProgress,
   setShots,
+  onReviewShot,
   setFlash,
   setCountdown,
 }) {
@@ -75,6 +80,7 @@ export default function usePhotoCapture({
     });
     sequenceShots.current = next;
     setShots(next);
+    if (!autoStart || delay === 0) onReviewShot?.(captureNumber - 1);
     if (previous) {
       URL.revokeObjectURL(previous.url);
       shotUrls.current = shotUrls.current.filter((url) => url !== previous.url);
@@ -131,7 +137,9 @@ export default function usePhotoCapture({
             ctx.translate(canvas.width, 0);
             ctx.scale(-1, 1);
           }
-          ctx.drawImage(source, 0, 0, canvas.width, canvas.height);
+          ctx.filter = photoEffect === 'background-blur' ? 'none' : photoEffect;
+          ctx.drawImage(photoEffect === 'background-blur' ? backgroundBlur.canvas.current : source, 0, 0, canvas.width, canvas.height);
+          ctx.filter = 'none';
           const result = face.latest.current;
           if (sticker !== 'none' && result && performance.now() - result.timestamp < 600)
             (face.draw || drawSticker)(ctx, result.points, canvas.width, canvas.height, sticker);
@@ -141,13 +149,23 @@ export default function usePhotoCapture({
         {
           signal: controller.signal,
           realtime: true,
+          ...motion,
           onProgress: setRecordProgress,
         }
       );
       if (id !== requestId.current) return;
       const url = URL.createObjectURL(blob);
       shotUrls.current.push(url);
-      saveShot({ url, poster, blob, type: 'live', width: canvas.width, height: canvas.height });
+      saveShot({
+        url,
+        poster,
+        blob,
+        type: 'live',
+        width: canvas.width,
+        height: canvas.height,
+        fps: motion?.fps,
+        seconds: motion?.boomerang ? 2 * motion.seconds - 2 / motion.fps : motion?.seconds,
+      });
     } catch (err) {
       if (id === requestId.current) stopSequence();
       if (id === requestId.current && err.name !== 'AbortError') {
@@ -196,7 +214,9 @@ export default function usePhotoCapture({
       ctx.translate(canvas.width, 0);
       ctx.scale(-1, 1);
     }
-    ctx.drawImage(source, 0, 0);
+    ctx.filter = photoEffect === 'background-blur' ? 'none' : photoEffect;
+    ctx.drawImage(photoEffect === 'background-blur' ? backgroundBlur.canvas.current : source, 0, 0, canvas.width, canvas.height);
+    ctx.filter = 'none';
     if (stickerPoints)
       (face.draw || drawSticker)(ctx, stickerPoints, canvas.width, canvas.height, sticker);
     setFlash(true);
@@ -238,12 +258,9 @@ export default function usePhotoCapture({
     let remaining = delay;
     setCountdown(remaining);
     const id = requestId.current;
-    timer.current = setInterval(() => {
-      if (
-        id !== requestId.current ||
-        !captureLock.current ||
-        (retakeIndex === null && !activeSequence.current)
-      ) {
+    const interval = setInterval(() => {
+      if (timer.current !== interval) return;
+      if (id !== requestId.current || !captureLock.current) {
         clearCountdown();
         return;
       }
@@ -251,12 +268,14 @@ export default function usePhotoCapture({
       if (remaining === 0) take();
       else setCountdown(remaining);
     }, 1000);
+    timer.current = interval;
   }
   function takePhoto() {
+    if (photoEffect === 'background-blur' && backgroundBlur?.status !== 'ready') return;
     if (captureLock.current || status !== 'ready' || countdown !== null || completed) return;
     captureLock.current = true;
     sequenceShots.current = shots;
-    activeSequence.current = delay > 0 && retakeIndex === null;
+    activeSequence.current = autoStart && delay > 0 && retakeIndex === null;
     setAutoCapture(activeSequence.current);
     setError('');
     scheduleCapture();

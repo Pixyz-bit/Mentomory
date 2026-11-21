@@ -6,7 +6,7 @@ export default function LandingHero({ onCapture }) {
     <section className="landing-hero" aria-labelledby="landing-title">
       <div className="landing-copy">
         <Brand />
-        <h1 id="landing-title" tabIndex="-1">
+        <h1 id="landing-title" tabIndex="-1" className="focus:[outline:none]">
           A little booth.
           <br />A lot of you.
         </h1>
@@ -17,7 +17,6 @@ export default function LandingHero({ onCapture }) {
         <button className="button button-dark landing-capture" onClick={capture}>
           Say Cheese :)
         </button>
-        <span className="landing-privacy">A few poses. A little keepsake.</span>
       </div>
       <div className="landing-art-stage">
         <LandingShowcase />

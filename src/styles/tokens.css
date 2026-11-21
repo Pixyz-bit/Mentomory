@@ -1,9 +1,10 @@
 :root {
   font-family: 'DM Sans', sans-serif;
-  color: #111;
-  background: #fff;
+  @apply [color:#111];
+  @apply [background:#fff];
   font-synthesis: none;
   --muted: #595960;
   --line: #dedee2;
+  --workflow-content-width: 1000px;
   scrollbar-color: #a1a1aa #f4f4f5;
 }

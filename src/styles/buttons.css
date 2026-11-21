@@ -1,52 +1,52 @@
 .button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  min-height: 44px;
-  padding: 11px 16px;
-  border: 2px solid #111;
-  border-radius: 9px;
-  font-size: 13px;
-  font-weight: 700;
-  text-decoration: none;
+  @apply flex;
+  @apply items-center;
+  @apply justify-center;
+  @apply gap-[10px];
+  @apply min-h-[44px];
+  @apply [padding:11px_16px];
+  @apply [border:2px_solid_#111];
+  @apply rounded-[9px];
+  @apply text-[13px];
+  @apply [font-weight:700];
+  @apply [text-decoration:none];
   transition: background 0.18s ease;
 }
 .button-dark,
 .button-primary {
-  background: #111;
-  color: #fff;
+  @apply [background:#111];
+  @apply [color:#fff];
 }
 .button-dark:hover:not(:disabled),
 .button-primary:hover {
-  background: #353535;
+  @apply [background:#353535];
 }
 .button-outline {
-  background: #fff;
+  @apply [background:#fff];
 }
 .button-outline:hover:not(:disabled) {
-  background: #f4f4f5;
+  @apply [background:#f4f4f5];
 }
 .shutter-button {
-  width: 240px;
-  max-width: 100%;
-  font-size: 18px;
-  align-self: center;
-  flex-shrink: 0;
+  @apply w-[240px];
+  @apply max-w-[100%];
+  @apply text-[18px];
+  @apply [align-self:center];
+  @apply [flex-shrink:0];
 }
 .completion-actions {
-  display: flex;
-  justify-content: center;
-  gap: 10px;
-  width: 100%;
+  @apply flex;
+  @apply justify-center;
+  @apply gap-[10px];
+  @apply w-[100%];
 }
 .completion-actions .button {
-  flex: 1;
-  max-width: 220px;
+  @apply [flex:1];
+  @apply max-w-[220px];
 }
 .setting-note {
-  color: var(--muted);
-  font-size: 11px;
-  line-height: 1.6;
-  margin: 0;
+  @apply [color:var(--muted)];
+  @apply text-[11px];
+  @apply leading-[1.6];
+  @apply m-[0];
 }
