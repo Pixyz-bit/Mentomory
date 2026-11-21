@@ -68,7 +68,66 @@ test('Duo lets either member fire one shutter and closes empty rooms after 15 mi
   assert.deepEqual(Buffer.from(await (await call('/photos/0/host', 'GET', guest.memberToken)).arrayBuffer()), jpeg);
 
   now += 14 * 60_000;
-  assert.equal((await call('', 'GET', guest.memberToken)).status, 200);
+  assert.equal((await call('', 'GET', owner.memberToken)).status, 200);
   now += 15 * 60_000;
   assert.equal((await call('', 'GET', owner.memberToken)).status, 404);
+});
+
+test('Trio and Quartet reopen departed seats and keep photos private from replacement guests', async (t) => {
+  let now = 10_000;
+  const origin = 'https://example.com';
+  const server = createBoothServer({ origins: [origin], now: () => now, realtime: async () => ({}) })
+    .listen(0, '127.0.0.1');
+  t.after(() => new Promise((resolve) => server.close(resolve)));
+  await once(server, 'listening');
+  const base = 'http://127.0.0.1:' + server.address().port + '/api/rooms';
+  const call = (path, method = 'GET', token, body, contentType) => fetch(base + path, {
+    method, body,
+    headers: { Origin: origin, ...(token && { Authorization: 'Bearer ' + token }),
+      ...(contentType && { 'Content-Type': contentType }) },
+  });
+  const jpeg = Buffer.from([255, 216, 255, 217]);
+
+  for (const size of [3, 4]) {
+    const host = await (await call('?size=' + size, 'POST')).json();
+    const path = '/' + host.roomId;
+    const guests = [];
+    async function join() {
+      const response = await call(path + '/join', 'POST');
+      assert.equal(response.status, 201);
+      return response.json();
+    }
+    for (let slot = 1; slot < size; slot++) guests.push(await join());
+    assert.equal((await call(path + '/join', 'POST')).status, 409);
+    for (const member of [host, ...guests].slice(0, -1)) {
+      assert.equal((await call(path + '/preview', 'PUT', member.memberToken, jpeg, 'image/jpeg')).status, 204);
+    }
+    assert.equal((await call(path + '/start', 'POST', host.memberToken)).status, 409);
+    assert.equal((await call(path + '/preview', 'PUT', guests.at(-1).memberToken, jpeg, 'image/jpeg')).status, 204);
+    assert.equal((await call(path + '/preview/' + guests.at(-1).role, 'GET', host.memberToken)).status, 200);
+    const shot = await (await call(path + '/start', 'POST', guests.at(-1).memberToken)).json();
+    now = shot.captureAt;
+    for (const member of [host, ...guests]) {
+      assert.equal((await call(path + '/photos/0/' + member.role + '?at=' + shot.captureAt, 'PUT',
+        member.memberToken, jpeg, 'image/jpeg')).status, 200);
+    }
+
+    const departed = guests[0];
+    assert.equal((await call(path + '/leave', 'POST', undefined, departed.memberToken, 'text/plain')).status, 204);
+    const state = await (await call(path, 'GET', host.memberToken)).json();
+    assert.equal(state.members.length, size - 1);
+    assert.equal(state.ready.includes(departed.role), false);
+    assert.equal((await call(path, 'GET', departed.memberToken)).status, 403);
+    const replacement = await join();
+    assert.equal(replacement.role, departed.role);
+    const newState = await (await call(path, 'GET', replacement.memberToken)).json();
+    assert.deepEqual(newState.shots, []);
+    assert.equal((await call(path + '/photos/0/' + departed.role, 'GET', replacement.memberToken)).status, 404);
+
+    now += 30_000;
+    const timedOut = await join();
+    assert.equal(timedOut.role, 'guest');
+    assert.equal((await call(path + '/leave', 'POST', host.memberToken)).status, 204);
+    assert.equal((await call(path, 'GET', timedOut.memberToken)).status, 404);
+  }
 });

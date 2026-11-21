@@ -199,7 +199,7 @@
     translate: -50% 0;
   }
 
-  .duo-pane-labels span + span {
+  .duo-pane-label[data-top-right] {
     padding-top: 2.7rem;
   }
 }
@@ -209,28 +209,20 @@
   padding-inline: 0;
 }
 
-.booth-app .viewfinder video[data-duo-side],
-.booth-app .viewfinder .camera-placeholder[data-duo-side],
-.duo-peer {
+.booth-app .viewfinder [data-room-pane] {
   position: absolute;
-  inset: 0 auto 0 0;
-  width: 50%;
-  height: 100%;
+  inset: var(--pane-y) auto auto var(--pane-x);
+  width: var(--pane-width);
+  height: var(--pane-height);
 }
 
-.booth-app .viewfinder video[data-duo-side='right'],
-.booth-app .viewfinder .camera-placeholder[data-duo-side='right'],
-.duo-peer[data-side='right'] {
-  inset-inline-start: 50%;
-}
-
-.booth-app .viewfinder .camera-placeholder[data-duo-side] {
+.booth-app .viewfinder .camera-placeholder[data-room-pane] {
   padding: .35rem;
   background: #292929;
   color: white;
 }
 
-.booth-app .camera-placeholder[data-duo-side] .enable-camera {
+.booth-app .camera-placeholder[data-room-pane] .enable-camera {
   max-width: 100%;
   min-width: 0;
 }
@@ -242,6 +234,7 @@
   color: white;
   background: #292929;
   text-align: center;
+  padding: .4rem;
 }
 
 .duo-peer img {
@@ -252,22 +245,19 @@
   object-fit: cover;
 }
 
-.duo-pane-labels {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+.duo-pane-label {
   pointer-events: none;
   z-index: 2;
-}
-
-.duo-pane-labels span {
   padding: .65rem;
   color: #fff;
   font-weight: 700;
   text-shadow: 0 1px 4px black;
 }
 
-.duo-pane-labels span + span {
+.duo-pane-label[data-column-divider] {
   border-left: 2px solid white;
+}
+
+.duo-pane-label[data-row-divider] {
+  border-top: 2px solid white;
 }

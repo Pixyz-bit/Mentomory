@@ -1,10 +1,10 @@
-# PixBooth Duo backend
+# PixBooth shared room backend
 
-Mentomory starts with Solo or Duo. Solo opens the style and layout picker. In Duo, the host uses that same picker after creating a room and the guest receives the chosen layout and pose prompts. Rooms use a random 10-digit code and admit two browsers. The shared viewfinder puts the host on the left. Either member can start a five-second countdown once both cameras are on.
+Mentomory starts with Solo, Duo, Trio, or Quartet. Solo opens the style and layout picker. In a shared room, the host uses that same picker and guests receive the chosen layout and pose prompts. A 10-digit code or invite link admits up to the chosen capacity. Any member can start a five-second countdown once every seat has a camera on.
 
-Both browsers capture locally at a shared server timestamp. Small private JPEG previews refresh about once per second. Duo supports Classic and Meme still layouts with up to four shots. Each host and guest photo pair becomes one image in the existing editor. Camera access requires a secure browser context.
+Each browser captures locally at a shared server timestamp. Private JPEG previews refresh about once per second and the higher-resolution shutter captures are composed into a 2160 × 1620 source image per shot. Shared rooms support Classic and Meme still layouts with up to four shots. Camera access requires a secure browser context.
 
-The backend holds room data and media in memory. Rooms expire after 15 minutes without a request from either authenticated member. An open tab sends a heartbeat while the browser allows it to run. Restarts clear rooms. There are no accounts or durable photo storage.
+The backend holds room data and media in memory. Guest seats are freed on leave or after 30 seconds without an authenticated heartbeat. The same room code can admit a replacement guest. Replacing a participant starts a fresh photo set, keeping earlier shots private. Host leave closes the room and otherwise the room expires after 15 minutes without any member activity. Restarts clear rooms. There are no accounts or durable photo storage.
 
 ## Runtime and VM setup
 

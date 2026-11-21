@@ -3,6 +3,7 @@ import CaptureActions from './CaptureActions.jsx';
 import Icon from '../common/Icon.jsx';
 import { poseImage } from '../../data/memePoses.js';
 import { LIVE_SECONDS } from '../../lib/media/live-media.js';
+import { boothGrid } from '../../lib/shared-booth.js';
 
 const photoEffects = [
   ['Original', 'none'],
@@ -52,7 +53,14 @@ export default function CameraPreview({
   roomCode,
 }) {
   const frame = useRef(null);
-  const localSide = split ? (split.role === 'host' ? 'left' : 'right') : undefined;
+  const grid = split && boothGrid(split.seats.length);
+  const paneStyle = (index) => ({
+    '--pane-x': (index % grid.columns) * 100 / grid.columns + '%',
+    '--pane-y': Math.floor(index / grid.columns) * 100 / grid.rows + '%',
+    '--pane-width': 100 / grid.columns + '%',
+    '--pane-height': 100 / grid.rows + '%',
+  });
+  const localPane = split ? paneStyle(split.seats.indexOf(split.role)) : undefined;
   useEffect(() => {
     function dismissOutside(event) {
       const openPanel = frame.current?.querySelector('details[name="booth-camera-panel"][open]');
@@ -80,23 +88,30 @@ export default function CameraPreview({
           openPanel.querySelector('summary').focus();
         }}>
           <div className={`viewfinder relative ${flash ? 'after:pointer-events-none after:absolute after:inset-0 after:bg-white after:content-[""]' : ''}`}>
-            {split && <div className="duo-peer" data-side={split.role === 'host' ? 'right' : 'left'}>
-              {split.remote ? <img src={split.remote} alt="Friend’s camera preview" /> : <span>{split.peerStatus}</span>}
-            </div>}
+            {split?.seats.map((seat, index) => seat !== split.role && (
+              <div className="duo-peer" data-room-pane={seat} key={seat} style={paneStyle(index)}>
+                {split.members.includes(seat) && split.remote[seat] ? <img src={split.remote[seat]} alt={`Person ${index + 1} camera preview`} /> :
+                  <span>{split.members.includes(seat) ? 'Camera off' : 'Open seat'}</span>}
+              </div>
+            ))}
             <video
               ref={video}
               autoPlay
               muted
               playsInline
               className={`absolute inset-0 ${mirror ? '[transform:scaleX(-1)]' : ''} ${cameraActive ? '' : 'invisible'}`}
-              style={{ filter: photoEffect === 'background-blur' ? 'none' : photoEffect }}
+              style={{ ...localPane, filter: photoEffect === 'background-blur' ? 'none' : photoEffect }}
               aria-label="Live webcam preview"
-              data-duo-side={localSide}
+              data-room-pane={split?.role}
             />
-            {split && <div className="duo-pane-labels" aria-hidden="true">
-              <span>Person 1{split.role === 'host' ? ' · You' : ''}</span>
-              <span>Person 2{split.role === 'guest' ? ' · You' : ''}</span>
-            </div>}
+            {split?.seats.map((seat, index) => (
+              <span className="duo-pane-label" data-room-pane={seat} key={seat} style={paneStyle(index)}
+                data-column-divider={index % grid.columns !== 0 || undefined}
+                data-row-divider={index >= grid.columns || undefined}
+                data-top-right={index === grid.columns - 1 || undefined}>
+                Person {index + 1}{split.role === seat ? ' · You' : ''}
+              </span>
+            ))}
             {roomCode && <span className="duo-room-code">Room <strong>{roomCode}</strong></span>}
             {photoEffect === 'background-blur' && (
               <canvas
@@ -131,7 +146,8 @@ export default function CameraPreview({
                 />
               ))}
             {!completed && (status === 'idle' || status === 'loading') && (
-              <div className="camera-placeholder absolute inset-0 flex flex-col items-center justify-center text-center" data-duo-side={localSide}>
+              <div className="camera-placeholder absolute inset-0 flex flex-col items-center justify-center text-center"
+                data-room-pane={split?.role} style={localPane}>
                 {status === 'loading' && <h2>Waiting for camera access…</h2>}
                 <button
                   className="button button-dark enable-camera"

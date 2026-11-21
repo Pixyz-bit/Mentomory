@@ -70,6 +70,7 @@ export default function TemplatesPage({ onContinue, onUpload, duo = false, setup
   function openPreview(id) {
     const layout = layouts.find((item) => item.id === id);
     if (layout.id === preview.id) return;
+    setUploadError('');
     setPrompts(initialPrompts(layout));
     setPreview(layout);
   }
@@ -107,9 +108,7 @@ export default function TemplatesPage({ onContinue, onUpload, duo = false, setup
     input.value = '';
     if (!files.length) return;
     if (files.length !== preview.count) {
-      setUploadError(
-        `Select exactly ${preview.count} ${preview.count === 1 ? 'photo' : 'photos'} for this layout.`
-      );
+      setUploadError(preview.count);
       return;
     }
 
@@ -339,7 +338,7 @@ export default function TemplatesPage({ onContinue, onUpload, duo = false, setup
                 onChange={importPhotos}
               />
             )}
-            {style === 'upload' && !choosingStyle && uploadError && (
+            {style === 'upload' && !choosingStyle && typeof uploadError === 'string' && uploadError && (
               <p role="alert">{uploadError}</p>
             )}
             <div className="picker-action-row">
@@ -356,7 +355,9 @@ export default function TemplatesPage({ onContinue, onUpload, duo = false, setup
                 : style === 'upload'
                   ? uploading
                     ? 'Opening photos…'
-                    : 'Upload photos'
+                    : typeof uploadError === 'number'
+                      ? `Choose ${uploadError} ${uploadError === 1 ? 'photo' : 'photos'}`
+                      : 'Upload photos'
                   : 'Continue to camera'}
               {choosingStyle || style === 'upload' ? (
                 <Icon name="arrow" />

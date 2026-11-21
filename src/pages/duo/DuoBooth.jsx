@@ -6,6 +6,7 @@ import CapturePage from '../capture/CapturePage.jsx';
 import TemplatesPage from '../templates/TemplatesPage.jsx';
 import { pickerLayouts } from '../../data/templates.js';
 import { memePoses } from '../../data/memePoses.js';
+import { boothGrid, defaultSeats } from '../../lib/shared-booth.js';
 import './DuoBooth.css';
 
 const localRoom = import.meta.env.DEV && !import.meta.env.VITE_PIXBOOTH_API_URL;
@@ -27,19 +28,24 @@ async function request(path, { token, method = 'GET', photo, setup, signal } = {
     ? response.json() : response.blob();
 }
 
-function capture(video, width, quality) {
-  if (!video?.videoWidth || video.readyState < 2) return Promise.resolve(null);
+async function capture(video, width, height, quality, limit) {
+  if (!video?.videoWidth || video.readyState < 2) return null;
   const canvas = document.createElement('canvas');
   canvas.width = width;
-  canvas.height = Math.round(width * 1.5);
+  canvas.height = height;
   const ctx = canvas.getContext('2d');
-  const sourceWidth = Math.min(video.videoWidth, video.videoHeight / 1.5);
-  const sourceHeight = sourceWidth * 1.5;
+  const ratio = width / height;
+  const sourceWidth = Math.min(video.videoWidth, video.videoHeight * ratio);
+  const sourceHeight = sourceWidth / ratio;
   ctx.translate(width, 0);
   ctx.scale(-1, 1);
   ctx.drawImage(video, (video.videoWidth - sourceWidth) / 2, (video.videoHeight - sourceHeight) / 2,
     sourceWidth, sourceHeight, 0, 0, width, canvas.height);
-  return new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', quality));
+  for (let jpegQuality = quality; jpegQuality >= .39; jpegQuality -= .12) {
+    const image = await new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', jpegQuality));
+    if (!image || image.size <= limit) return image;
+  }
+  return null;
 }
 
 function ChoiceContent({ art, title, detail }) {
@@ -81,22 +87,31 @@ function ChoiceCard({ selected, onClick, disabled, children, ...content }) {
 
 export function BoothMode() {
   const [choice, setChoice] = useState(null);
-  return <ChoiceScreen title="Take photos solo or with a friend">
+  return <ChoiceScreen title="Choose how many people are in the booth">
     <div className="duo-choice-grid" role="group" aria-label="Booth mode">
       <ChoiceCard art="solo" title="Solo" detail="Take photos on your own."
-        selected={choice === 'solo'} onClick={() => setChoice('solo')} />
+        selected={choice === 1} onClick={() => setChoice(1)} />
       <ChoiceCard art="duo" title="Duo" detail="Share a booth with a friend."
-        selected={choice === 'duo'} onClick={() => setChoice('duo')} />
+        selected={choice === 2} onClick={() => setChoice(2)} />
+      <ChoiceCard art="trio" title="Trio" detail="A booth for three people."
+        selected={choice === 3} onClick={() => setChoice(3)} />
+      <ChoiceCard art="quartet" title="Quartet" detail="A booth for four people."
+        selected={choice === 4} onClick={() => setChoice(4)} />
     </div>
     <ChoiceActions back="/">
       <button className="button button-dark" disabled={!choice}
-        onClick={() => navigate(choice === 'solo' ? '/templates' : '/duo')}>Continue <Icon name="arrow" /></button>
+        onClick={() => navigate(choice === 1 ? '/templates' : '/duo?size=' + choice)}>Continue <Icon name="arrow" /></button>
     </ChoiceActions>
   </ChoiceScreen>;
 }
 
 export function DuoBooth({ onContinue }) {
   const [room, setRoom] = useState(null);
+  const [capacity] = useState(() => {
+    if (typeof window === 'undefined') return 2;
+    const size = Number(new URLSearchParams(window.location.search).get('size'));
+    return [3, 4].includes(size) ? size : 2;
+  });
   const [inviteCode] = useState(() => {
     const value = typeof window === 'undefined' ? null : new URLSearchParams(window.location.search).get('room');
     return /^\d{10}$/.test(value || '') ? value : '';
@@ -112,15 +127,15 @@ export function DuoBooth({ onContinue }) {
     setPending(true);
     setError('');
     try {
-      const result = await request(isJoin ? '/' + roomId + '/join' : '', { method: 'POST' });
-      setRoom({ ...result, roomId: result.roomId || roomId, role: isJoin ? 'guest' : 'host' });
+      const result = await request(isJoin ? '/' + roomId + '/join' : '?size=' + capacity, { method: 'POST' });
+      setRoom({ ...result, roomId: result.roomId || roomId, role: result.role || (isJoin ? 'guest' : 'host') });
     } catch (failure) {
       setError(failure.status === 404 ? 'Room closed or code not found.' :
-        failure.status === 409 ? 'This room already has two people.' : 'Could not connect to the booth. Try again.');
+        failure.status === 409 ? 'This room is full.' : 'Could not connect to the booth. Try again.');
     } finally {
       setPending(false);
     }
-  }, []);
+  }, [capacity]);
 
   useEffect(() => {
     if (!inviteCode || inviteAttempted.current) return;
@@ -152,7 +167,7 @@ export function DuoBooth({ onContinue }) {
               onChange={(event) => setCode(event.target.value.replace(/\D/g, ''))} />
           </div>
         </ChoiceCard>
-        <ChoiceCard art="create" title="Create room" detail="Start a booth and share your room code."
+        <ChoiceCard art="create" title="Create room" detail={'Start a booth for ' + capacity + ' people.'}
           selected={choice === 'create'} disabled={pending} onClick={() => select('create')} />
       </div>
       {error && <p role="alert">{error}</p>}
@@ -174,19 +189,36 @@ function DuoRoom({ room, onLeave, onContinue }) {
   const cameraRequest = useRef(0);
   const [camera, setCamera] = useState(false);
   const [opening, setOpening] = useState(false);
-  const [remote, setRemote] = useState('');
+  const [remote, setRemote] = useState({});
   const [state, setState] = useState(null);
+  const [disconnected, setDisconnected] = useState(false);
+  const revision = useRef(0);
   const [countdown, setCountdown] = useState(null);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const call = (suffix, options) => request('/' + roomId + suffix, { token, ...options });
   const last = state?.shots.at(-1);
   const [captured, setCaptured] = useState([]);
+  const seats = state?.seats || defaultSeats;
   const template = pickerLayouts.find((layout) => layout.id === state?.setup?.layoutId);
   const prompts = state?.setup?.prompts.map((index) => memePoses[index]) || [];
-  const completeCount = state?.shots.filter((shot) => shot.photos.length === 2).length || 0;
-  const waitingForPhotos = last && last.photos.length < 2 && state.serverTime < last.captureAt + 12_000;
-  const canStart = camera && state?.ready.length === 2 && !waitingForPhotos && completeCount < template?.count;
+  const completeCount = state?.shots.filter((shot) => shot.photos.length === seats.length).length || 0;
+  const waitingForPhotos = last && last.photos.length < seats.length && state.serverTime < last.captureAt + 12_000;
+  const canStart = camera && state?.ready.length === seats.length && !waitingForPhotos && completeCount < template?.count;
+
+  async function leave() {
+    await request('/' + roomId + '/leave', { token, method: 'POST' }).catch(() => {});
+    onLeave();
+  }
+
+  useEffect(() => {
+    function notifyPageClose(event) {
+      if (event.persisted) return;
+      navigator.sendBeacon(api + '/api/rooms/' + roomId + '/leave', token);
+    }
+    window.addEventListener('pagehide', notifyPageClose);
+    return () => window.removeEventListener('pagehide', notifyPageClose);
+  }, [roomId, token]);
 
   function stopCamera() {
     cameraRequest.current++;
@@ -206,7 +238,10 @@ function DuoRoom({ room, onLeave, onContinue }) {
     setOpening(true);
     setError('');
     try {
-      const opened = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
+      const opened = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'user', width: { ideal: 1920 }, height: { ideal: 1080 } },
+        audio: false,
+      });
       if (attempt !== cameraRequest.current || !video.current) {
         opened.getTracks().forEach((track) => track.stop());
         return;
@@ -231,7 +266,7 @@ function DuoRoom({ room, onLeave, onContinue }) {
     const send = (suffix, options) => request('/' + roomId + suffix, {
       token, signal: AbortSignal.any([signal, AbortSignal.timeout(5500)]), ...options,
     });
-    let previewUrl;
+    let previewUrls = {};
     let refreshTimer;
     let shotTimer;
     let countdownTimer;
@@ -258,9 +293,10 @@ function DuoRoom({ room, onLeave, onContinue }) {
         clearInterval(countdownTimer);
         setCountdown(null);
         try {
-          const photo = await capture(video.current, 560, 0.78);
+          const { columns, rows } = boothGrid((snapshot.seats || defaultSeats).length);
+          const photo = await capture(video.current, 2160 / columns, 1620 / rows, 0.94, 256 * 1024);
           if (!photo) throw new Error();
-          await send('/photos/' + index + '/' + role, { method: 'PUT', photo });
+          await send('/photos/' + index + '/' + role + '?at=' + shot.captureAt, { method: 'PUT', photo });
           refresh();
         } catch {
           if (!signal.aborted) setError('Your photo didn’t reach the booth. Try the next shot.');
@@ -280,21 +316,36 @@ function DuoRoom({ room, onLeave, onContinue }) {
         const started = performance.now();
         const snapshot = await send('');
         if (signal.aborted) return;
+        if ((snapshot.revision ?? 0) !== revision.current) {
+          revision.current = snapshot.revision;
+          clearTimeout(shotTimer);
+          clearInterval(countdownTimer);
+          setCountdown(null);
+          shotUrls.current.forEach(({ url }) => URL.revokeObjectURL(url));
+          shotUrls.current = [];
+          setCaptured([]);
+        }
         setState(snapshot);
         schedule(snapshot, started);
-        const peer = role === 'host' ? 'guest' : 'host';
-        const preview = snapshot.ready.includes(peer) ? await send('/preview').catch(() => null) : null;
+        const previews = await Promise.all(snapshot.ready.filter((peer) => peer !== role).map(async (peer) => {
+          const path = snapshot.seats ? '/preview/' + peer : '/preview';
+          return [peer, await send(path).catch(() => null)];
+        }));
         if (signal.aborted) return;
-        if (previewUrl) URL.revokeObjectURL(previewUrl);
-        previewUrl = preview ? URL.createObjectURL(preview) : '';
-        setRemote(previewUrl);
+        Object.values(previewUrls).forEach((url) => URL.revokeObjectURL(url));
+        previewUrls = Object.fromEntries(previews.filter(([, photo]) => photo).map(([peer, photo]) =>
+          [peer, URL.createObjectURL(photo)]));
+        setRemote(previewUrls);
       } catch (failure) {
-        if (!signal.aborted && failure.status === 404) {
+        if (!signal.aborted && [403, 404].includes(failure.status)) {
+          controller.abort();
+          clearTimeout(shotTimer);
+          clearInterval(countdownTimer);
+          setCountdown(null);
           stream.current?.getTracks().forEach((track) => track.stop());
           setCamera(false);
           setState(null);
-          setError('This room has closed. Leave and create or join another room.');
-          controller.abort();
+          setDisconnected(true);
         }
       } finally {
         refreshing = false;
@@ -308,7 +359,9 @@ function DuoRoom({ room, onLeave, onContinue }) {
     let previewTimer;
     async function uploadPreview() {
       try {
-        const photo = await capture(video.current, 160, 0.55);
+        const { columns, rows } = boothGrid(seats.length);
+        const width = 840 / columns;
+        const photo = await capture(video.current, width, 630 / rows, 0.77, 96 * 1024);
         if (photo) await send('/preview', { method: 'PUT', photo });
       } catch {
         // The next frame replaces a missed preview.
@@ -334,9 +387,9 @@ function DuoRoom({ room, onLeave, onContinue }) {
       clearTimeout(previewTimer);
       clearTimeout(shotTimer);
       clearInterval(countdownTimer);
-      if (previewUrl) URL.revokeObjectURL(previewUrl);
+      Object.values(previewUrls).forEach((url) => URL.revokeObjectURL(url));
     };
-  }, [roomId, token, role, camera]);
+  }, [roomId, token, role, camera, seats.length]);
 
   async function start() {
     setBusy(true);
@@ -373,18 +426,20 @@ function DuoRoom({ room, onLeave, onContinue }) {
     const index = captured.length;
     async function loadPair() {
       try {
-        const images = await Promise.all(['host', 'guest'].map((person) =>
+        const images = await Promise.all(seats.map((person) =>
           request('/' + roomId + '/photos/' + index + '/' + person, {
             token, signal: AbortSignal.any([controller.signal, AbortSignal.timeout(6000)]),
           })));
         const photos = await Promise.all(images.map((blob) => createImageBitmap(blob)));
         const canvas = document.createElement('canvas');
         const width = photos[0].width;
-        canvas.width = width * 2;
-        canvas.height = photos[0].height;
+        const height = photos[0].height;
+        const { columns, rows } = boothGrid(seats.length);
+        canvas.width = width * columns;
+        canvas.height = height * rows;
         const ctx = canvas.getContext('2d');
         photos.forEach((photo, position) => {
-          ctx.drawImage(photo, position * width, 0);
+          ctx.drawImage(photo, position % columns * width, Math.floor(position / columns) * height, width, height);
           photo.close();
         });
         const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.94));
@@ -403,7 +458,7 @@ function DuoRoom({ room, onLeave, onContinue }) {
       clearTimeout(retry);
       if (previewUrl && !retained) URL.revokeObjectURL(previewUrl);
     };
-  }, [completeCount, captured.length, roomId, token]);
+  }, [completeCount, captured.length, roomId, token, seats.length, state?.revision]);
 
   const shotUrls = useRef([]);
   shotUrls.current = captured;
@@ -411,11 +466,14 @@ function DuoRoom({ room, onLeave, onContinue }) {
     shotUrls.current.forEach(({ url }) => URL.revokeObjectURL(url));
   }, []);
 
-  if (!template && role === 'host') return <TemplatesPage duo setupError={error} onContinue={saveSetup} onBack={onLeave} />;
+  if (disconnected) return <ChoiceScreen title="This room is no longer connected">
+    <div className="duo-choice-actions"><button className="button button-outline" onClick={onLeave}>Back</button></div>
+  </ChoiceScreen>;
+  if (!template && role === 'host') return <TemplatesPage duo setupError={error} onContinue={saveSetup} onBack={leave} />;
   if (!template) return <ChoiceScreen title="Waiting for your host">
     <p>Your camera will open for setup once your friend picks a style and layout.</p>
     {error && <p role="alert">{error}</p>}
-    <button className="button button-outline" onClick={onLeave}>Back</button>
+    <button className="button button-outline" onClick={leave}>Back</button>
   </ChoiceScreen>;
 
   const completed = captured.length === template.count;
@@ -425,8 +483,11 @@ function DuoRoom({ room, onLeave, onContinue }) {
       duo={{
         roomCode: roomId,
         canInvite: role === 'host',
-        onBack: onLeave,
-        split: { role, remote, peerStatus: state.guestJoined ? 'Camera off' : 'Waiting for a friend' },
+        onBack: leave,
+        split: {
+          role, remote, seats,
+          members: state.members || (state.guestJoined ? defaultSeats : ['host']),
+        },
         onContinue: () => onContinue(template.id, captured.map(({ blob, ...shot }) => ({
           ...shot, url: URL.createObjectURL(blob),
         })), prompts),
