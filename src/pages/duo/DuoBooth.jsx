@@ -251,16 +251,22 @@ function DuoRoom({ room, onLeave, onContinue }) {
         width: { ideal: 1920 },
         height: { ideal: 1080 },
       };
-      const opened = await navigator.mediaDevices.getUserMedia({
-        video: { ...videoOptions, frameRate: { min: 27, ideal: 30 } },
-        audio: false,
-      }).catch((failure) => {
-        if (failure.name !== 'OverconstrainedError' || attempt !== cameraRequest.current) throw failure;
+      async function openAt(frameRate) {
         return navigator.mediaDevices.getUserMedia({
-          video: { ...videoOptions, frameRate: { ideal: 30 } },
+          video: { ...videoOptions, frameRate },
           audio: false,
         });
-      });
+      }
+      const canRetry = (failure) => failure.name === 'OverconstrainedError' && attempt === cameraRequest.current;
+      const opened = await openAt({ min: 55, ideal: 60, max: 60 })
+        .catch((failure) => {
+          if (!canRetry(failure)) throw failure;
+          return openAt({ min: 27, ideal: 30, max: 30 });
+        })
+        .catch((failure) => {
+          if (!canRetry(failure)) throw failure;
+          return openAt({ ideal: 30, max: 30 });
+        });
       if (attempt !== cameraRequest.current || !video.current) {
         opened.getTracks().forEach((track) => track.stop());
         return;

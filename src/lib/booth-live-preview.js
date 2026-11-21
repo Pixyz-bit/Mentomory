@@ -42,7 +42,7 @@ export function createLivePreview({ role, stream, send, onStream, iceServers = [
         parameters.degradationPreference = 'maintain-framerate';
         const targetHeight = size > 2 ? 360 : 540;
         parameters.encodings[0].maxBitrate = size > 2 ? 400_000 : 900_000;
-        parameters.encodings[0].maxFramerate = 30;
+        parameters.encodings[0].maxFramerate = Math.min(60, track.getSettings().frameRate || 60);
         parameters.encodings[0].scaleResolutionDownBy = Math.max(1, (track.getSettings().height || targetHeight) / targetHeight);
         sender.setParameters(parameters).catch(() => {});
       }
